@@ -1,0 +1,150 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  aliveSeats,
+  buildAgentView,
+  createGame,
+  eliminate,
+  recordSpeech,
+  recordVote,
+  revealOf,
+  seatById,
+  toGodView,
+  toPublicView,
+} from '@/lib/game/state';
+import type { GameState, Persona, WordPair } from '@/lib/game/types';
+
+const PAIR: WordPair = { civilian: '牛奶', undercover: '豆浆' };
+
+const PERSONAS: Persona[] = [0, 1, 2, 3].map((id) => ({
+  id: `persona-${id}`,
+  name: `玩家${id}`,
+  label: `人设${id}`,
+  systemPrompt: `你是玩家${id}`,
+}));
+
+function newGame(undercoverSeatId = 2): GameState {
+  return createGame({ gameId: 'g-1', personas: PERSONAS, pair: PAIR, undercoverSeatId });
+}
+
+describe('createGame', () => {
+  it('生成 4 个座位，1 个卧底 3 个平民', () => {
+    const state = newGame();
+    expect(state.seats).toHaveLength(4);
+    expect(state.seats.filter((seat) => seat.role === 'undercover')).toHaveLength(1);
+    expect(state.seats.filter((seat) => seat.role === 'civilian')).toHaveLength(3);
+  });
+
+  it('平民拿同一个词，卧底拿另一个词', () => {
+    const state = newGame(2);
+    expect(state.seats.map((seat) => seat.word)).toEqual(['牛奶', '牛奶', '豆浆', '牛奶']);
+  });
+
+  it('初始阶段是 setup，轮次为 0，日志为空', () => {
+    const state = newGame();
+    expect(state.phase).toBe('setup');
+    expect(state.round).toBe(0);
+    expect(state.activeSeatId).toBeNull();
+    expect(state.log).toEqual([]);
+    expect(state.winner).toBeNull();
+    expect(state.errorMessage).toBeNull();
+  });
+
+  it('persona 数量不是 4 时抛错', () => {
+    expect(() =>
+      createGame({ gameId: 'g', personas: PERSONAS.slice(0, 3), pair: PAIR, undercoverSeatId: 0 }),
+    ).toThrow('需要 4 个 persona');
+  });
+
+  it('卧底座位号越界时抛错', () => {
+    expect(() =>
+      createGame({ gameId: 'g', personas: PERSONAS, pair: PAIR, undercoverSeatId: 4 }),
+    ).toThrow('卧底座位号越界');
+  });
+});
+
+describe('突变辅助', () => {
+  it('recordSpeech / recordVote 按顺序追加日志', () => {
+    const state = newGame();
+    state.round = 1;
+    recordSpeech(state, { kind: 'speech', round: 1, seatId: 0, text: '白白的', fallback: false });
+    recordVote(state, {
+      kind: 'vote',
+      round: 1,
+      seatId: 0,
+      targetSeatId: 2,
+      reason: '他很虚',
+      fallback: false,
+    });
+    expect(state.log.map((entry) => entry.kind)).toEqual(['speech', 'vote']);
+  });
+
+  it('eliminate 把座位置为出局并写一条 elimination 日志', () => {
+    const state = newGame();
+    state.round = 1;
+    eliminate(state, 2, true);
+    expect(seatById(state, 2).alive).toBe(false);
+    expect(state.log.at(-1)).toEqual({ kind: 'elimination', round: 1, seatId: 2, tieBreak: true });
+    expect(aliveSeats(state).map((seat) => seat.id)).toEqual([0, 1, 3]);
+  });
+
+  it('seatById 对不存在的座位抛错', () => {
+    expect(() => seatById(newGame(), 9)).toThrow('座位 9 不存在');
+  });
+});
+
+describe('toPublicView', () => {
+  it('座位只暴露 id / name / personaLabel / alive 四个字段', () => {
+    const view = toPublicView(newGame());
+    for (const seat of view.seats) {
+      expect(Object.keys(seat).sort()).toEqual(['alive', 'id', 'name', 'personaLabel']);
+    }
+  });
+
+  it('序列化后不含任何私有词与 role 字段', () => {
+    const serialized = JSON.stringify(toPublicView(newGame()));
+    expect(serialized).not.toContain(PAIR.civilian);
+    expect(serialized).not.toContain(PAIR.undercover);
+    expect(serialized).not.toContain('"role"');
+  });
+
+  it('日志被完整带上', () => {
+    const state = newGame();
+    state.round = 1;
+    recordSpeech(state, { kind: 'speech', round: 1, seatId: 0, text: '白白的', fallback: false });
+    expect(toPublicView(state).log).toHaveLength(1);
+  });
+});
+
+describe('toGodView / revealOf', () => {
+  it('上帝视角额外给出每个座位的身份与词', () => {
+    const state = newGame(2);
+    expect(revealOf(state)).toEqual([
+      { seatId: 0, role: 'civilian', word: '牛奶' },
+      { seatId: 1, role: 'civilian', word: '牛奶' },
+      { seatId: 2, role: 'undercover', word: '豆浆' },
+      { seatId: 3, role: 'civilian', word: '牛奶' },
+    ]);
+    expect(toGodView(state).reveal).toHaveLength(4);
+    expect(toGodView(state).seats).toEqual(toPublicView(state).seats);
+  });
+});
+
+describe('buildAgentView', () => {
+  it('只给出自己的词和公开信息', () => {
+    const state = newGame(2);
+    const view = buildAgentView(state, 2);
+    expect(view.seatId).toBe(2);
+    expect(view.seatName).toBe('玩家2');
+    expect(view.word).toBe('豆浆');
+    expect(JSON.stringify(view.seats)).not.toContain('牛奶');
+    expect(view.aliveOtherIds).toEqual([0, 1, 3]);
+  });
+
+  it('出局的人不出现在 aliveOtherIds 里', () => {
+    const state = newGame(2);
+    state.round = 1;
+    eliminate(state, 1, false);
+    expect(buildAgentView(state, 2).aliveOtherIds).toEqual([0, 3]);
+  });
+});
