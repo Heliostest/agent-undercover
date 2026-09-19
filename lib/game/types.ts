@@ -1,3 +1,5 @@
+import type { Bill } from '@/lib/billing/estimate';
+
 export type Phase = 'setup' | 'speak' | 'vote' | 'result' | 'error';
 
 export type Role = 'civilian' | 'undercover';
@@ -81,6 +83,8 @@ export interface PublicGameView {
   log: LogEntry[];
   winner: Winner | null;
   errorMessage: string | null;
+  /** 局末账单；没结束或没收到 bill 事件时为 null。 */
+  bill: Bill | null;
 }
 
 export interface RevealSeat {
@@ -140,4 +144,6 @@ export type GameEvent =
       winner: Winner | null;
       reveal: RevealSeat[] | null;
     }
+  /** 终局事件之前发出的本局估算账单，绝不含 API Key。 */
+  | { type: 'bill'; bill: Bill }
   | { type: 'error'; message: string };

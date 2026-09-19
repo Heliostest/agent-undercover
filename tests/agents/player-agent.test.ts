@@ -6,8 +6,9 @@ import {
   FALLBACK_VOTE_REASON,
   PlayerAgent,
 } from '@/lib/agents/player-agent';
+import type { UsageRecordInput } from '@/lib/billing/ledger';
 import type { AgentView } from '@/lib/game/types';
-import type { LlmClient } from '@/lib/llm/types';
+import type { LlmClient, LlmUsage } from '@/lib/llm/types';
 
 const VIEW: AgentView = {
   seatId: 2,
@@ -24,7 +25,20 @@ const VIEW: AgentView = {
   aliveOtherIds: [0, 1, 3],
 };
 
-function scriptedLlm(replies: Array<string | Error>): LlmClient & { complete: ReturnType<typeof vi.fn> } {
+const SAMPLE_USAGE: LlmUsage = {
+  promptTokens: 120,
+  completionTokens: 30,
+  totalTokens: 150,
+  cacheHitTokens: 64,
+  cacheMissTokens: 56,
+  usageReported: true,
+  cacheReported: true,
+};
+
+function scriptedLlm(
+  replies: Array<string | Error>,
+  usage: LlmUsage = SAMPLE_USAGE,
+): LlmClient & { complete: ReturnType<typeof vi.fn> } {
   const complete = vi.fn(async () => {
     const next = replies.shift();
     if (next === undefined) {
@@ -33,15 +47,17 @@ function scriptedLlm(replies: Array<string | Error>): LlmClient & { complete: Re
     if (next instanceof Error) {
       throw next;
     }
-    return next;
+    return { text: next, usage };
   });
-  return { complete } as unknown as LlmClient & { complete: ReturnType<typeof vi.fn> };
+  return { provider: 'zhipu', model: 'glm-4-flash', complete } as unknown as LlmClient & {
+    complete: ReturnType<typeof vi.fn>;
+  };
 }
 
 describe('PlayerAgent.speak', () => {
   it('第一次就合格时直接返回，只调用一次模型', async () => {
     const llm = scriptedLlm(['{"speech":"早上常喝的白色饮品"}']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.speak(VIEW)).resolves.toEqual({
       text: '早上常喝的白色饮品',
@@ -52,7 +68,7 @@ describe('PlayerAgent.speak', () => {
 
   it('首次输出念出词面时重试一次并采用第二次结果', async () => {
     const llm = scriptedLlm(['{"speech":"我的词就是豆浆"}', '{"speech":"早上常喝的白色饮品"}']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.speak(VIEW)).resolves.toEqual({
       text: '早上常喝的白色饮品',
@@ -63,7 +79,7 @@ describe('PlayerAgent.speak', () => {
 
   it('两次都不合格时兜底为空发言并标记 fallback', async () => {
     const llm = scriptedLlm(['乱七八糟', '还是乱七八糟']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
     expect(llm.complete).toHaveBeenCalledTimes(2);
@@ -71,7 +87,7 @@ describe('PlayerAgent.speak', () => {
 
   it('模型连续抛错时也兜底，不向外抛', async () => {
     const llm = scriptedLlm([new Error('网络炸了'), new Error('又炸了')]);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
   });
@@ -80,7 +96,7 @@ describe('PlayerAgent.speak', () => {
 describe('PlayerAgent.vote', () => {
   it('合法投票直接返回', async () => {
     const llm = scriptedLlm(['{"vote":1,"reason":"描述太笼统"}']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
       targetSeatId: 1,
@@ -92,7 +108,7 @@ describe('PlayerAgent.vote', () => {
 
   it('投了非候选座位时重试一次', async () => {
     const llm = scriptedLlm(['{"vote":2,"reason":"投自己"}', '{"vote":3,"reason":"他太安静"}']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
       targetSeatId: 3,
@@ -104,7 +120,7 @@ describe('PlayerAgent.vote', () => {
 
   it('两次都不合格时按 rng 随机投一个合法候选', async () => {
     const llm = scriptedLlm(['不是 JSON', '还是不是 JSON']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0.99)).resolves.toEqual({
       targetSeatId: 3,
@@ -115,8 +131,84 @@ describe('PlayerAgent.vote', () => {
 
   it('候选为空时抛错（Judge 不应该这样调用）', async () => {
     const llm = scriptedLlm(['不是 JSON', '还是不是 JSON']);
-    const agent = new PlayerAgent(PERSONAS[2], { llm });
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [], () => 0)).rejects.toThrow('无法从空列表中随机选取');
+  });
+});
+
+describe('PlayerAgent 用量上报', () => {
+  it('发言成功时上报一条 speak 用量，带座位、供应商、模型与缓存字段', async () => {
+    const llm = scriptedLlm(['{"speech":"早上常喝的白色饮品"}']);
+    const reported: UsageRecordInput[] = [];
+    const agent = new PlayerAgent(PERSONAS[2], {
+      llm,
+      seatId: 2,
+      onUsage: (input) => reported.push(input),
+    });
+
+    await agent.speak(VIEW);
+
+    expect(reported).toEqual([
+      {
+        seatId: 2,
+        phase: 'speak',
+        provider: 'zhipu',
+        model: 'glm-4-flash',
+        usage: SAMPLE_USAGE,
+      },
+    ]);
+  });
+
+  it('重试导致的多次调用会各记一笔', async () => {
+    const llm = scriptedLlm(['{"speech":"我的词就是豆浆"}', '{"speech":"早上常喝的白色饮品"}']);
+    const reported: UsageRecordInput[] = [];
+    const agent = new PlayerAgent(PERSONAS[2], {
+      llm,
+      seatId: 2,
+      onUsage: (input) => reported.push(input),
+    });
+
+    await agent.speak(VIEW);
+
+    expect(reported).toHaveLength(2);
+    expect(reported.every((input) => input.phase === 'speak')).toBe(true);
+  });
+
+  it('投票阶段上报 phase 为 vote', async () => {
+    const llm = scriptedLlm(['{"vote":0,"reason":"他说得太稳了"}']);
+    const reported: UsageRecordInput[] = [];
+    const agent = new PlayerAgent(PERSONAS[2], {
+      llm,
+      seatId: 2,
+      onUsage: (input) => reported.push(input),
+    });
+
+    await agent.vote(VIEW, [0, 1, 3], () => 0);
+
+    expect(reported.map((input) => input.phase)).toEqual(['vote']);
+  });
+
+  it('调用抛错时不上报（没拿到响应就没有 usage）', async () => {
+    const llm = scriptedLlm([new Error('socket hang up'), new Error('socket hang up')]);
+    const reported: UsageRecordInput[] = [];
+    const agent = new PlayerAgent(PERSONAS[2], {
+      llm,
+      seatId: 2,
+      onUsage: (input) => reported.push(input),
+    });
+
+    await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
+    expect(reported).toEqual([]);
+  });
+
+  it('没传 onUsage 时照常工作，不抛错', async () => {
+    const llm = scriptedLlm(['{"speech":"早上常喝的白色饮品"}']);
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
+
+    await expect(agent.speak(VIEW)).resolves.toEqual({
+      text: '早上常喝的白色饮品',
+      fallback: false,
+    });
   });
 });

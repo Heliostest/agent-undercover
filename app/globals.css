@@ -172,3 +172,142 @@ button.primary {
 .god-header .section-title {
   margin: 0;
 }
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.settings-field-wide {
+  flex: 1 1 260px;
+}
+
+.settings-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.settings-field input,
+.settings-field select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+}
+
+.settings-field input:disabled,
+.settings-field select:disabled {
+  opacity: 0.5;
+}
+
+.bill-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bill-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(255, 196, 0, 0.18);
+  color: #ffc400;
+}
+
+.bill-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.bill-totals dt {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.bill-totals dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.bill-cost {
+  color: #ffc400;
+}
+
+.bill-notes {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.bill-subtitle {
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
+
+.bill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bill-table th,
+.bill-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.bill-calls {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.bill-calls summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-item {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.history-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.history-row button {
+  margin-left: auto;
+}

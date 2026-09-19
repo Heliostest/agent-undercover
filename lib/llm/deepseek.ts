@@ -1,11 +1,11 @@
 import { createOpenAiCompatibleClient } from '@/lib/llm/openai-compatible';
 import type { LlmClient } from '@/lib/llm/types';
 
-export const ZHIPU_DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
-export const ZHIPU_DEFAULT_MODEL = 'glm-4-flash';
-export const ZHIPU_LABEL = '智谱';
+export const DEEPSEEK_DEFAULT_BASE_URL = 'https://api.deepseek.com/v1';
+export const DEEPSEEK_DEFAULT_MODEL = 'deepseek-chat';
+export const DEEPSEEK_LABEL = 'DeepSeek';
 
-export interface ZhipuClientOptions {
+export interface DeepseekClientOptions {
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -15,11 +15,11 @@ export interface ZhipuClientOptions {
   timeoutMs?: number;
 }
 
-export function createZhipuClient(options: ZhipuClientOptions): LlmClient {
+export function createDeepseekClient(options: DeepseekClientOptions): LlmClient {
   return createOpenAiCompatibleClient({
-    provider: 'zhipu',
-    label: ZHIPU_LABEL,
-    baseUrl: options.baseUrl ?? ZHIPU_DEFAULT_BASE_URL,
+    provider: 'deepseek',
+    label: DEEPSEEK_LABEL,
+    baseUrl: options.baseUrl ?? DEEPSEEK_DEFAULT_BASE_URL,
     apiKey: options.apiKey,
     model: options.model,
     fetchImpl: options.fetchImpl,
