@@ -1,20 +1,9 @@
-import { parseUsage } from '@/lib/llm/usage';
-import {
-  LlmError,
-  type LlmClient,
-  type LlmCompleteOptions,
-  type LlmCompletion,
-  type LlmMessage,
-} from '@/lib/llm/types';
+import { createOpenAiCompatibleClient } from '@/lib/llm/openai-compatible';
+import type { LlmClient } from '@/lib/llm/types';
 
 export const ZHIPU_DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
 export const ZHIPU_DEFAULT_MODEL = 'glm-4-flash';
-
-const RETRY_BASE_DELAY_MS = 500;
-const DEFAULT_MAX_RETRIES = 2;
-const DEFAULT_TIMEOUT_MS = 20_000;
-const DEFAULT_TEMPERATURE = 0.4;
-const DEFAULT_MAX_TOKENS = 400;
+export const ZHIPU_LABEL = '智谱';
 
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -28,6 +17,7 @@ export interface ZhipuConfig {
   model: string;
 }
 
+/** @deprecated Key 已改由 POST /api/games 请求体传入，Task 9 会删掉这个函数。 */
 export function readZhipuConfigFromEnv(env: Record<string, string | undefined>): ZhipuConfig {
   const apiKey = (env.ZHIPU_API_KEY ?? '').trim();
   if (apiKey === '') {
@@ -45,80 +35,16 @@ export interface ZhipuClientOptions extends ZhipuConfig {
   timeoutMs?: number;
 }
 
-/** 429 / 5xx / 网络错误 / 超时都值得重试；其余 4xx 是我们自己的请求有问题，重试没意义。 */
-export function isRetryable(error: unknown): boolean {
-  if (error instanceof LlmError && error.status !== undefined) {
-    return error.status === 429 || error.status >= 500;
-  }
-  return true;
-}
-
 export function createZhipuClient(options: ZhipuClientOptions): LlmClient {
-  const baseUrl = options.baseUrl ?? ZHIPU_DEFAULT_BASE_URL;
-  const fetchImpl = options.fetchImpl ?? fetch;
-  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-
-  async function attempt(
-    messages: LlmMessage[],
-    completeOptions?: LlmCompleteOptions,
-  ): Promise<LlmCompletion> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetchImpl(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${options.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: options.model,
-          messages,
-          temperature: completeOptions?.temperature ?? DEFAULT_TEMPERATURE,
-          max_tokens: completeOptions?.maxTokens ?? DEFAULT_MAX_TOKENS,
-          stream: false,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const body = await response.text();
-        throw new LlmError(`智谱接口返回 ${response.status}：${body.slice(0, 200)}`, response.status);
-      }
-
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-        usage?: unknown;
-      };
-      const content = payload.choices?.[0]?.message?.content;
-      if (typeof content !== 'string' || content.trim() === '') {
-        throw new LlmError('智谱接口返回了空内容');
-      }
-      return { text: content, usage: parseUsage(payload.usage) };
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  return {
+  return createOpenAiCompatibleClient({
     provider: 'zhipu',
+    label: ZHIPU_LABEL,
+    baseUrl: options.baseUrl ?? ZHIPU_DEFAULT_BASE_URL,
+    apiKey: options.apiKey,
     model: options.model,
-    async complete(messages, completeOptions) {
-      let lastError: unknown = new LlmError('智谱请求未执行');
-      for (let retry = 0; retry <= maxRetries; retry += 1) {
-        try {
-          return await attempt(messages, completeOptions);
-        } catch (error) {
-          lastError = error;
-          if (!isRetryable(error) || retry === maxRetries) {
-            break;
-          }
-          await sleep(RETRY_BASE_DELAY_MS * 2 ** retry);
-        }
-      }
-      throw lastError instanceof Error ? lastError : new LlmError(String(lastError));
-    },
-  };
+    fetchImpl: options.fetchImpl,
+    sleep: options.sleep,
+    maxRetries: options.maxRetries,
+    timeoutMs: options.timeoutMs,
+  });
 }
