@@ -1,20 +1,58 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import { GodPanel } from '@/components/GodPanel';
 import { SeatCard } from '@/components/SeatCard';
+import { SettingsForm } from '@/components/SettingsForm';
 import { Timeline } from '@/components/Timeline';
 import { TopBar } from '@/components/TopBar';
 import { VoteBar } from '@/components/VoteBar';
-import { defaultSettings } from '@/lib/client/settings-storage';
+import {
+  browserStorage,
+  clearStoredSettings,
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  type LlmSettings,
+} from '@/lib/client/settings-storage';
 import { useGameStream } from '@/lib/client/use-game-stream';
 
 export default function HomePage() {
+  // 首屏先用默认值渲染，挂载后再读 localStorage，避免服务端与客户端首帧不一致。
+  const [settings, setSettings] = useState<LlmSettings>(defaultSettings);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const { view, status, errorMessage, start } = useGameStream();
-  const settings = defaultSettings();
+
+  useEffect(() => {
+    setSettings(loadSettings(browserStorage()));
+  }, []);
+
+  function updateSettings(next: LlmSettings) {
+    setSettings(next);
+    setStorageError(saveSettings(next, browserStorage()));
+  }
+
+  function clearKey() {
+    const next = { ...settings, apiKey: '' };
+    setSettings(next);
+    clearStoredSettings(browserStorage());
+    setStorageError(null);
+  }
+
+  const running = status === 'starting' || status === 'streaming';
 
   return (
     <main className="page">
       <TopBar view={view} status={status} onStart={() => void start(settings)} />
+
+      <SettingsForm
+        settings={settings}
+        disabled={running}
+        storageError={storageError}
+        onChange={updateSettings}
+        onClearKey={clearKey}
+      />
 
       {errorMessage ? <p className="panel danger">{errorMessage}</p> : null}
 
@@ -30,7 +68,7 @@ export default function HomePage() {
           <GodPanel gameId={view.gameId} />
         </>
       ) : (
-        <p className="panel muted">点「开始」让四个 AI 玩家自动打一局。</p>
+        <p className="panel muted">填好上面的模型设置，点「开始」让四个 AI 玩家自动打一局。</p>
       )}
     </main>
   );

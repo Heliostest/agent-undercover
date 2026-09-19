@@ -172,3 +172,42 @@ button.primary {
 .god-header .section-title {
   margin: 0;
 }
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.settings-field-wide {
+  flex: 1 1 260px;
+}
+
+.settings-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.settings-field input,
+.settings-field select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+}
+
+.settings-field input:disabled,
+.settings-field select:disabled {
+  opacity: 0.5;
+}
