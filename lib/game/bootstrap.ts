@@ -37,7 +37,7 @@ export function startGame(options: StartGameOptions = {}): GameSession {
   putSession(session);
 
   const agents = new Map<number, SeatAgent>(
-    PERSONAS.map((persona, seatId) => [seatId, new PlayerAgent(persona, { llm })]),
+    PERSONAS.map((persona, seatId) => [seatId, new PlayerAgent(persona, { llm, seatId })]),
   );
 
   session.completion = runGame(state, {
