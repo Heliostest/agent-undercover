@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { BillHistory } from '@/components/BillHistory';
 import { BillPanel } from '@/components/BillPanel';
 import { GodPanel } from '@/components/GodPanel';
 import { SeatCard } from '@/components/SeatCard';
@@ -73,6 +74,8 @@ export default function HomePage() {
       )}
 
       {bill ? <BillPanel bill={bill} seats={view?.seats ?? []} /> : null}
+
+      <BillHistory latestBill={bill} />
     </main>
   );
 }
