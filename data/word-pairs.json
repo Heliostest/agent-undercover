@@ -1,0 +1,14 @@
+[
+  { "civilian": "牛奶", "undercover": "豆浆" },
+  { "civilian": "咖啡", "undercover": "奶茶" },
+  { "civilian": "老虎", "undercover": "狮子" },
+  { "civilian": "医生", "undercover": "护士" },
+  { "civilian": "飞机", "undercover": "高铁" },
+  { "civilian": "西瓜", "undercover": "哈密瓜" },
+  { "civilian": "电影院", "undercover": "剧场" },
+  { "civilian": "吉他", "undercover": "尤克里里" },
+  { "civilian": "羽毛球", "undercover": "网球" },
+  { "civilian": "火锅", "undercover": "麻辣烫" },
+  { "civilian": "台风", "undercover": "龙卷风" },
+  { "civilian": "钢笔", "undercover": "铅笔" }
+]
