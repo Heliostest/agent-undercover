@@ -211,3 +211,76 @@ button.primary {
 .settings-field select:disabled {
   opacity: 0.5;
 }
+
+.bill-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bill-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(255, 196, 0, 0.18);
+  color: #ffc400;
+}
+
+.bill-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.bill-totals dt {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.bill-totals dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.bill-cost {
+  color: #ffc400;
+}
+
+.bill-notes {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.bill-subtitle {
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
+
+.bill-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bill-table th,
+.bill-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.bill-calls {
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.bill-calls summary {
+  cursor: pointer;
+  font-size: 13px;
+}

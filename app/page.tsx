@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { BillPanel } from '@/components/BillPanel';
 import { GodPanel } from '@/components/GodPanel';
 import { SeatCard } from '@/components/SeatCard';
 import { SettingsForm } from '@/components/SettingsForm';
@@ -22,7 +23,7 @@ export default function HomePage() {
   // 首屏先用默认值渲染，挂载后再读 localStorage，避免服务端与客户端首帧不一致。
   const [settings, setSettings] = useState<LlmSettings>(defaultSettings);
   const [storageError, setStorageError] = useState<string | null>(null);
-  const { view, status, errorMessage, start } = useGameStream();
+  const { view, status, errorMessage, bill, start } = useGameStream();
 
   useEffect(() => {
     setSettings(loadSettings(browserStorage()));
@@ -70,6 +71,8 @@ export default function HomePage() {
       ) : (
         <p className="panel muted">填好上面的模型设置，点「开始」让四个 AI 玩家自动打一局。</p>
       )}
+
+      {bill ? <BillPanel bill={bill} seats={view?.seats ?? []} /> : null}
     </main>
   );
 }
