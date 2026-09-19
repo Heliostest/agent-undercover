@@ -5,14 +5,16 @@ import { SeatCard } from '@/components/SeatCard';
 import { Timeline } from '@/components/Timeline';
 import { TopBar } from '@/components/TopBar';
 import { VoteBar } from '@/components/VoteBar';
+import { defaultSettings } from '@/lib/client/settings-storage';
 import { useGameStream } from '@/lib/client/use-game-stream';
 
 export default function HomePage() {
   const { view, status, errorMessage, start } = useGameStream();
+  const settings = defaultSettings();
 
   return (
     <main className="page">
-      <TopBar view={view} status={status} onStart={() => void start()} />
+      <TopBar view={view} status={status} onStart={() => void start(settings)} />
 
       {errorMessage ? <p className="panel danger">{errorMessage}</p> : null}
 
