@@ -6,15 +6,28 @@ import { GET as getReveal } from '@/app/api/games/[gameId]/reveal/route';
 import { startGame } from '@/lib/game/bootstrap';
 import type { LlmClient } from '@/lib/llm/types';
 
+/** 永远给出合法发言与合法投票（总投候选里的第一个）的假模型，并固定上报一份 usage。 */
 function fakeLlm(): LlmClient {
   return {
+    provider: 'zhipu',
+    model: 'glm-4-flash',
     async complete(messages) {
       const prompt = messages[messages.length - 1].content;
-      if (prompt.includes('"speech"')) {
-        return '{"speech":"一种常见的日常事物"}';
-      }
-      const match = prompt.match(/可投的座位号：(\d+)/);
-      return `{"vote":${match ? Number(match[1]) : 0},"reason":"先投票再说"}`;
+      const text = prompt.includes('"speech"')
+        ? '{"speech":"一种常见的日常事物"}'
+        : `{"vote":${Number(prompt.match(/可投的座位号：(\d+)/)?.[1] ?? 0)},"reason":"先投票再说"}`;
+      return {
+        text,
+        usage: {
+          promptTokens: 100,
+          completionTokens: 20,
+          totalTokens: 120,
+          cacheHitTokens: 64,
+          cacheMissTokens: 36,
+          usageReported: true,
+          cacheReported: true,
+        },
+      };
     },
   };
 }

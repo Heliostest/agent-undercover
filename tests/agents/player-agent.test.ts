@@ -7,7 +7,7 @@ import {
   PlayerAgent,
 } from '@/lib/agents/player-agent';
 import type { AgentView } from '@/lib/game/types';
-import type { LlmClient } from '@/lib/llm/types';
+import type { LlmClient, LlmUsage } from '@/lib/llm/types';
 
 const VIEW: AgentView = {
   seatId: 2,
@@ -24,7 +24,20 @@ const VIEW: AgentView = {
   aliveOtherIds: [0, 1, 3],
 };
 
-function scriptedLlm(replies: Array<string | Error>): LlmClient & { complete: ReturnType<typeof vi.fn> } {
+const SAMPLE_USAGE: LlmUsage = {
+  promptTokens: 120,
+  completionTokens: 30,
+  totalTokens: 150,
+  cacheHitTokens: 64,
+  cacheMissTokens: 56,
+  usageReported: true,
+  cacheReported: true,
+};
+
+function scriptedLlm(
+  replies: Array<string | Error>,
+  usage: LlmUsage = SAMPLE_USAGE,
+): LlmClient & { complete: ReturnType<typeof vi.fn> } {
   const complete = vi.fn(async () => {
     const next = replies.shift();
     if (next === undefined) {
@@ -33,9 +46,11 @@ function scriptedLlm(replies: Array<string | Error>): LlmClient & { complete: Re
     if (next instanceof Error) {
       throw next;
     }
-    return next;
+    return { text: next, usage };
   });
-  return { complete } as unknown as LlmClient & { complete: ReturnType<typeof vi.fn> };
+  return { provider: 'zhipu', model: 'glm-4-flash', complete } as unknown as LlmClient & {
+    complete: ReturnType<typeof vi.fn>;
+  };
 }
 
 describe('PlayerAgent.speak', () => {

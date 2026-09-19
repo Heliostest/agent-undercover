@@ -1,4 +1,11 @@
-import { LlmError, type LlmClient, type LlmCompleteOptions, type LlmMessage } from '@/lib/llm/types';
+import { parseUsage } from '@/lib/llm/usage';
+import {
+  LlmError,
+  type LlmClient,
+  type LlmCompleteOptions,
+  type LlmCompletion,
+  type LlmMessage,
+} from '@/lib/llm/types';
 
 export const ZHIPU_DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
 export const ZHIPU_DEFAULT_MODEL = 'glm-4-flash';
@@ -53,7 +60,10 @@ export function createZhipuClient(options: ZhipuClientOptions): LlmClient {
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  async function attempt(messages: LlmMessage[], completeOptions?: LlmCompleteOptions): Promise<string> {
+  async function attempt(
+    messages: LlmMessage[],
+    completeOptions?: LlmCompleteOptions,
+  ): Promise<LlmCompletion> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -80,18 +90,21 @@ export function createZhipuClient(options: ZhipuClientOptions): LlmClient {
 
       const payload = (await response.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
+        usage?: unknown;
       };
       const content = payload.choices?.[0]?.message?.content;
       if (typeof content !== 'string' || content.trim() === '') {
         throw new LlmError('智谱接口返回了空内容');
       }
-      return content;
+      return { text: content, usage: parseUsage(payload.usage) };
     } finally {
       clearTimeout(timer);
     }
   }
 
   return {
+    provider: 'zhipu',
+    model: options.model,
     async complete(messages, completeOptions) {
       let lastError: unknown = new LlmError('智谱请求未执行');
       for (let retry = 0; retry <= maxRetries; retry += 1) {
