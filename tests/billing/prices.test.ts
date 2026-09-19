@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { PRICE_TABLE, isKnownModel, normalizeModel, priceFor } from '@/lib/billing/prices';
+import {
+  PRICE_TABLE,
+  isKnownModel,
+  isPricedProvider,
+  normalizeModel,
+  priceFor,
+} from '@/lib/billing/prices';
 
 describe('PRICE_TABLE', () => {
-  it('两个供应商都有 fallback 档，且单价非负', () => {
+  it('两个内置价目供应商都有 fallback 档，且单价非负', () => {
     for (const provider of ['zhipu', 'deepseek'] as const) {
       const prices = PRICE_TABLE[provider];
       expect(prices.fallback.promptPerKTokens).toBeGreaterThanOrEqual(0);
@@ -23,6 +29,19 @@ describe('PRICE_TABLE', () => {
 
   it('覆盖智谱默认模型 glm-4-flash', () => {
     expect(PRICE_TABLE.zhipu.models['glm-4-flash']).toBeDefined();
+  });
+
+  it('不给 OpenRouter 编造单价', () => {
+    expect(Object.keys(PRICE_TABLE)).toEqual(['zhipu', 'deepseek']);
+    expect(JSON.stringify(PRICE_TABLE)).not.toContain('openrouter');
+  });
+});
+
+describe('isPricedProvider', () => {
+  it('只有内置价目表里的供应商能估价', () => {
+    expect(isPricedProvider('zhipu')).toBe(true);
+    expect(isPricedProvider('deepseek')).toBe(true);
+    expect(isPricedProvider('openrouter')).toBe(false);
   });
 });
 
@@ -49,6 +68,11 @@ describe('priceFor', () => {
     expect(priceFor('deepseek', 'deepseek-v9')).toEqual(PRICE_TABLE.deepseek.fallback);
     expect(priceFor('zhipu', 'glm-未来版')).toEqual(PRICE_TABLE.zhipu.fallback);
   });
+
+  it('没有价目表的供应商返回 null，而不是瞎猜一个价', () => {
+    expect(priceFor('openrouter', 'openai/gpt-4o-mini')).toBeNull();
+    expect(priceFor('openrouter', 'anything')).toBeNull();
+  });
 });
 
 describe('isKnownModel', () => {
@@ -57,5 +81,9 @@ describe('isKnownModel', () => {
     expect(isKnownModel('zhipu', 'GLM-4-Flash')).toBe(true);
     expect(isKnownModel('zhipu', 'glm-未来版')).toBe(false);
     expect(isKnownModel('deepseek', '')).toBe(false);
+  });
+
+  it('没有价目表的供应商一律为 false', () => {
+    expect(isKnownModel('openrouter', 'openai/gpt-4o-mini')).toBe(false);
   });
 });

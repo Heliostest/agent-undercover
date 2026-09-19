@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { UsageRecord } from '@/lib/billing/ledger';
 import {
   BILL_ESTIMATE_NOTE,
+  COST_UNAVAILABLE_NOTE,
   buildBill,
   estimateCallCostCny,
   roundCny,
@@ -50,6 +51,12 @@ describe('estimateCallCostCny', () => {
         record({ promptTokens: 0, completionTokens: 0, totalTokens: 0, usageReported: false }),
       ),
     ).toBe(0);
+  });
+
+  it('没有内置单价的供应商返回 null', () => {
+    expect(
+      estimateCallCostCny(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' })),
+    ).toBeNull();
   });
 });
 
@@ -201,6 +208,47 @@ describe('buildBill', () => {
     });
 
     expect(bill.notes).toContain('缓存命中的 token 按 prompt 单价计入，没有做缓存折扣。');
+  });
+
+  it('OpenRouter 只统计 token：总计与按座位的费用都是 null', () => {
+    const openrouterRecord = (overrides: Partial<UsageRecord> = {}) =>
+      record({ provider: 'openrouter', model: 'openai/gpt-4o-mini', ...overrides });
+    const bill = buildBill({
+      gameId: 'g-1',
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      finishedAt: 0,
+      records: [openrouterRecord({ seatId: 0 }), openrouterRecord({ seatId: 1 })],
+    });
+
+    expect(bill.totals.totalTokens).toBe(3000);
+    expect(bill.totals.estimatedCostCny).toBeNull();
+    expect(bill.bySeat.map((seat) => seat.estimatedCostCny)).toEqual([null, null]);
+    expect(bill.notes).toContain(COST_UNAVAILABLE_NOTE);
+  });
+
+  it('OpenRouter 没有任何调用时费用同样是 null 而不是 0', () => {
+    const bill = buildBill({
+      gameId: 'g-1',
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      finishedAt: 0,
+      records: [],
+    });
+
+    expect(bill.totals.estimatedCostCny).toBeNull();
+  });
+
+  it('OpenRouter 不会再提示「按默认档估算」，因为根本没有默认档', () => {
+    const bill = buildBill({
+      gameId: 'g-1',
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      finishedAt: 0,
+      records: [record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' })],
+    });
+
+    expect(bill.notes.some((note) => note.includes('默认档单价估算'))).toBe(false);
   });
 
   it('一次调用都没有时也给出合法的空账单', () => {

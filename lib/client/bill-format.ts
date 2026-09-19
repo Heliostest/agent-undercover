@@ -7,9 +7,15 @@ export const USAGE_PHASE_LABELS: Record<UsagePhase, string> = {
 };
 
 export const CACHE_UNKNOWN_TEXT = '未提供';
+export const COST_UNAVAILABLE_TEXT = '费用暂不可用（仅统计 token）';
 
 export function formatCny(value: number): string {
   return `¥${value.toFixed(4)}`;
+}
+
+/** 供应商没有内置单价时账单里的费用是 null，这里统一渲染成一句说明。 */
+export function formatCost(value: number | null): string {
+  return value === null ? COST_UNAVAILABLE_TEXT : formatCny(value);
 }
 
 /** 自己插逗号，不依赖 Intl，保证不同 Node 构建下输出一致。 */
@@ -45,5 +51,6 @@ export function formatCacheCell(
 }
 
 export function formatCallCost(record: UsageRecord): string {
-  return formatCny(roundCny(estimateCallCostCny(record)));
+  const cost = estimateCallCostCny(record);
+  return formatCost(cost === null ? null : roundCny(cost));
 }

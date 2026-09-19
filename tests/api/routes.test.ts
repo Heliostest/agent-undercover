@@ -97,7 +97,9 @@ describe('POST /api/games 请求体校验', () => {
     const response = await POST(postRequest({ provider: 'openai', apiKey: 'k' }));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: 'provider 只能是 zhipu 或 deepseek' });
+    await expect(response.json()).resolves.toEqual({
+      error: 'provider 只能是 zhipu 或 deepseek 或 openrouter',
+    });
   });
 
   it('请求体不是合法 JSON 时返回 400', async () => {

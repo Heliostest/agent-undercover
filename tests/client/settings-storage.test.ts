@@ -86,7 +86,7 @@ describe('validateSettings', () => {
   it('非法 provider 给出可读提示', () => {
     expect(
       validateSettings({ ...FILLED, provider: 'openai' as LlmSettings['provider'] }),
-    ).toBe('请选择供应商：智谱 或 DeepSeek');
+    ).toBe('请选择供应商：智谱 或 DeepSeek 或 OpenRouter');
   });
 });
 

@@ -1,9 +1,11 @@
 import type { UsageRecord } from '@/lib/billing/ledger';
-import { isKnownModel, priceFor } from '@/lib/billing/prices';
+import { isKnownModel, isPricedProvider, priceFor } from '@/lib/billing/prices';
 import { PROVIDER_LABELS } from '@/lib/llm/providers';
 import type { LlmProvider } from '@/lib/llm/types';
 
 export const BILL_ESTIMATE_NOTE = '本账单为本地估算，实际费用以供应商官方账单为准。';
+export const COST_UNAVAILABLE_NOTE =
+  '该供应商没有内置单价表（模型来自上游多家厂商），本局只统计 token，费用暂不可用。';
 
 export interface SeatBill {
   seatId: number;
@@ -13,7 +15,8 @@ export interface SeatBill {
   totalTokens: number;
   cacheHitTokens: number;
   cacheMissTokens: number;
-  estimatedCostCny: number;
+  /** 供应商没有内置单价时为 null，界面显示「费用暂不可用」。 */
+  estimatedCostCny: number | null;
 }
 
 export interface BillTotals {
@@ -27,7 +30,8 @@ export interface BillTotals {
   cacheReportedCalls: number;
   /** 整段 usage 缺失的调用次数，这些调用按 0 token 计入。 */
   usageMissingCalls: number;
-  estimatedCostCny: number;
+  /** 供应商没有内置单价时为 null，界面显示「费用暂不可用」。 */
+  estimatedCostCny: number | null;
 }
 
 export interface Bill {
@@ -47,8 +51,12 @@ export function roundCny(value: number): number {
   return Math.round(value * 10_000) / 10_000;
 }
 
-export function estimateCallCostCny(record: UsageRecord): number {
+/** 供应商没有内置单价时返回 null，调用方负责把它渲染成「费用暂不可用」。 */
+export function estimateCallCostCny(record: UsageRecord): number | null {
   const price = priceFor(record.provider, record.model);
+  if (price === null) {
+    return null;
+  }
   return (
     (record.promptTokens / 1000) * price.promptPerKTokens +
     (record.completionTokens / 1000) * price.completionPerKTokens
@@ -78,7 +86,9 @@ function emptySeatBill(seatId: number): SeatBill {
 
 function buildNotes(input: BuildBillInput, totals: BillTotals): string[] {
   const notes = [BILL_ESTIMATE_NOTE];
-  if (!isKnownModel(input.provider, input.model)) {
+  if (!isPricedProvider(input.provider)) {
+    notes.push(COST_UNAVAILABLE_NOTE);
+  } else if (!isKnownModel(input.provider, input.model)) {
     notes.push(
       `模型 ${input.model} 不在内置价目表里，已按 ${PROVIDER_LABELS[input.provider]} 默认档单价估算。`,
     );
@@ -89,7 +99,7 @@ function buildNotes(input: BuildBillInput, totals: BillTotals): string[] {
   if (totals.cacheReportedCalls === 0) {
     notes.push('本局供应商没有返回缓存字段，缓存命中一律显示「未提供」。');
   }
-  if (totals.cacheHitTokens > 0) {
+  if (totals.cacheHitTokens > 0 && isPricedProvider(input.provider)) {
     notes.push('缓存命中的 token 按 prompt 单价计入，没有做缓存折扣。');
   }
   return notes;
@@ -97,6 +107,8 @@ function buildNotes(input: BuildBillInput, totals: BillTotals): string[] {
 
 export function buildBill(input: BuildBillInput): Bill {
   const calls = [...input.records].sort((a, b) => a.at - b.at);
+  // 供应商没有内置单价时全局不算钱：总计与每个座位的费用都留 null。
+  const priced = isPricedProvider(input.provider);
 
   const totals: BillTotals = {
     calls: calls.length,
@@ -107,7 +119,7 @@ export function buildBill(input: BuildBillInput): Bill {
     cacheMissTokens: 0,
     cacheReportedCalls: 0,
     usageMissingCalls: 0,
-    estimatedCostCny: 0,
+    estimatedCostCny: priced ? 0 : null,
   };
 
   // 费用先按未取整的浮点累加，最后统一取整，避免每条都取整带来的累计误差。
@@ -116,7 +128,7 @@ export function buildBill(input: BuildBillInput): Bill {
   let rawTotalCost = 0;
 
   for (const call of calls) {
-    const cost = estimateCallCostCny(call);
+    const cost = estimateCallCostCny(call) ?? 0;
     rawTotalCost += cost;
 
     totals.promptTokens += call.promptTokens;
@@ -142,10 +154,13 @@ export function buildBill(input: BuildBillInput): Bill {
     seatCosts.set(call.seatId, (seatCosts.get(call.seatId) ?? 0) + cost);
   }
 
-  totals.estimatedCostCny = roundCny(rawTotalCost);
+  totals.estimatedCostCny = priced ? roundCny(rawTotalCost) : null;
 
   const bySeat = [...seatBills.values()]
-    .map((seat) => ({ ...seat, estimatedCostCny: roundCny(seatCosts.get(seat.seatId) ?? 0) }))
+    .map((seat) => ({
+      ...seat,
+      estimatedCostCny: priced ? roundCny(seatCosts.get(seat.seatId) ?? 0) : null,
+    }))
     .sort((a, b) => a.seatId - b.seatId);
 
   return {

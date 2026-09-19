@@ -1,4 +1,5 @@
 import { createDeepseekClient } from '@/lib/llm/deepseek';
+import { createOpenrouterClient } from '@/lib/llm/openrouter';
 import { DEFAULT_MODELS, PROVIDERS, isLlmProvider } from '@/lib/llm/providers';
 import type { LlmClient, LlmProvider } from '@/lib/llm/types';
 import { createZhipuClient } from '@/lib/llm/zhipu';
@@ -72,5 +73,12 @@ export function createLlmClient(config: LlmConfig, options: CreateClientOptions 
     maxRetries: options.maxRetries,
     timeoutMs: options.timeoutMs,
   };
-  return config.provider === 'deepseek' ? createDeepseekClient(shared) : createZhipuClient(shared);
+  switch (config.provider) {
+    case 'deepseek':
+      return createDeepseekClient(shared);
+    case 'openrouter':
+      return createOpenrouterClient(shared);
+    case 'zhipu':
+      return createZhipuClient(shared);
+  }
 }

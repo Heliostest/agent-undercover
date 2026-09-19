@@ -21,6 +21,8 @@ export interface OpenAiCompatibleOptions {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /** 供应商额外要求的请求头（如 OpenRouter 的 HTTP-Referer / X-Title）；不会覆盖认证与 content-type。 */
+  extraHeaders?: Record<string, string>;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
@@ -52,6 +54,7 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
       const response = await fetchImpl(`${options.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
+          ...options.extraHeaders,
           'content-type': 'application/json',
           authorization: `Bearer ${options.apiKey}`,
         },

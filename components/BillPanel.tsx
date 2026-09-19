@@ -6,7 +6,7 @@ import {
   formatCacheCell,
   formatCallCost,
   formatClock,
-  formatCny,
+  formatCost,
   formatTokens,
 } from '@/lib/client/bill-format';
 import { seatName } from '@/lib/client/format';
@@ -56,7 +56,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
         </div>
         <div>
           <dt>估算费用</dt>
-          <dd className="bill-cost">{formatCny(bill.totals.estimatedCostCny)}</dd>
+          <dd className="bill-cost">{formatCost(bill.totals.estimatedCostCny)}</dd>
         </div>
       </dl>
 
@@ -88,7 +88,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
               <td>
                 {bill.totals.cacheReportedCalls > 0 ? formatTokens(seat.cacheHitTokens) : '未提供'}
               </td>
-              <td>{formatCny(seat.estimatedCostCny)}</td>
+              <td>{formatCost(seat.estimatedCostCny)}</td>
             </tr>
           ))}
         </tbody>
