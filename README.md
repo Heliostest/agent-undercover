@@ -52,7 +52,7 @@ app/                              页面与 API routes
 components/                       纯展示组件
 lib/game/                         GameState / rules / Judge / session / registry / bootstrap
 lib/agents/                       personas / prompt / PlayerAgent
-lib/llm/                          供应商客户端（OpenAI 兼容核心 + 智谱 / DeepSeek）与用量解析
+lib/llm/                          供应商客户端（OpenAI 兼容核心 + 智谱 / DeepSeek / OpenRouter）与用量解析
 lib/billing/                      用量流水账、价目表、账单估算与 bill 事件发射
 lib/client/                       事件归约、格式化、SSE hook、设置与账单历史存储
 data/word-pairs.json              内置词库
@@ -73,6 +73,8 @@ SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vo
 ## 计费说明
 
 账单是**本地估算**：单价表内置在 `lib/billing/prices.ts`（单位 CNY / 1K tokens），未知模型按该供应商默认档估算，缓存命中的 token 按 prompt 单价计入、没有做缓存折扣。实际费用以供应商官方账单为准。供应商没有返回 usage 或缓存字段时，对应数值记 0 并在账单里注明。
+
+OpenRouter 的模型来自上游多家厂商、按美元实时计价，因此**不做费用估算**：账单照常统计 token，费用一律显示「费用暂不可用（仅统计 token）」。模型名用 OpenRouter 的 `厂商/模型` 写法（默认 `openai/gpt-4o-mini`）。
 
 ## v1 不包含
 

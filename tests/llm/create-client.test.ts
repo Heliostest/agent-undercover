@@ -11,14 +11,23 @@ import { DEFAULT_MODELS, PROVIDERS, PROVIDER_LABELS, isLlmProvider } from '@/lib
 
 describe('providers 常量', () => {
   it('供应商顺序固定，标签与默认模型齐全', () => {
-    expect(PROVIDERS).toEqual(['zhipu', 'deepseek']);
-    expect(PROVIDER_LABELS).toEqual({ zhipu: '智谱', deepseek: 'DeepSeek' });
-    expect(DEFAULT_MODELS).toEqual({ zhipu: 'glm-4-flash', deepseek: 'deepseek-chat' });
+    expect(PROVIDERS).toEqual(['zhipu', 'deepseek', 'openrouter']);
+    expect(PROVIDER_LABELS).toEqual({
+      zhipu: '智谱',
+      deepseek: 'DeepSeek',
+      openrouter: 'OpenRouter',
+    });
+    expect(DEFAULT_MODELS).toEqual({
+      zhipu: 'glm-4-flash',
+      deepseek: 'deepseek-chat',
+      openrouter: 'openai/gpt-4o-mini',
+    });
   });
 
-  it('isLlmProvider 只认这两个字符串', () => {
+  it('isLlmProvider 只认这三个字符串', () => {
     expect(isLlmProvider('zhipu')).toBe(true);
     expect(isLlmProvider('deepseek')).toBe(true);
+    expect(isLlmProvider('openrouter')).toBe(true);
     expect(isLlmProvider('openai')).toBe(false);
     expect(isLlmProvider(undefined)).toBe(false);
   });
@@ -36,6 +45,15 @@ describe('parseLlmConfig', () => {
     expect(parseLlmConfig({ provider: 'deepseek', model: '   ', apiKey: 'k' }).model).toBe(
       'deepseek-chat',
     );
+    expect(parseLlmConfig({ provider: 'openrouter', apiKey: 'k' }).model).toBe(
+      'openai/gpt-4o-mini',
+    );
+  });
+
+  it('OpenRouter 的「厂商/模型」写法不会被当成非法模型', () => {
+    expect(
+      parseLlmConfig({ provider: 'openrouter', model: ' anthropic/claude-3.5-sonnet ', apiKey: 'k' }),
+    ).toEqual({ provider: 'openrouter', model: 'anthropic/claude-3.5-sonnet', apiKey: 'k' });
   });
 
   it('请求体不是对象时抛 InvalidLlmConfigError', () => {
@@ -45,7 +63,7 @@ describe('parseLlmConfig', () => {
 
   it('未知 provider 抛错并给出可选值', () => {
     expect(() => parseLlmConfig({ provider: 'openai', apiKey: 'k' })).toThrow(
-      'provider 只能是 zhipu 或 deepseek',
+      'provider 只能是 zhipu 或 deepseek 或 openrouter',
     );
     expect(() => parseLlmConfig({ apiKey: 'k' })).toThrow(InvalidLlmConfigError);
   });
@@ -98,10 +116,18 @@ describe('createLlmClient', () => {
       apiKey: 'k',
     });
 
+    const openrouter = createLlmClient({
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      apiKey: 'k',
+    });
+
     expect(zhipu.provider).toBe('zhipu');
     expect(zhipu.model).toBe('glm-4-plus');
     expect(deepseek.provider).toBe('deepseek');
     expect(deepseek.model).toBe('deepseek-reasoner');
+    expect(openrouter.provider).toBe('openrouter');
+    expect(openrouter.model).toBe('openai/gpt-4o-mini');
   });
 
   it('注入的 fetchImpl 会被真正用上（测试里绝不发真实请求）', async () => {

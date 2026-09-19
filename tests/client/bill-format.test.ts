@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { UsageRecord } from '@/lib/billing/ledger';
 import {
   CACHE_UNKNOWN_TEXT,
+  COST_UNAVAILABLE_TEXT,
   USAGE_PHASE_LABELS,
   formatCacheCell,
   formatCallCost,
   formatClock,
   formatCny,
+  formatCost,
   formatDateTime,
   formatTokens,
 } from '@/lib/client/bill-format';
@@ -70,10 +72,28 @@ describe('formatCacheCell', () => {
   });
 });
 
+describe('formatCost', () => {
+  it('有金额时和 formatCny 一致', () => {
+    expect(formatCost(0.012)).toBe('¥0.0120');
+    expect(formatCost(0)).toBe('¥0.0000');
+  });
+
+  it('金额为 null 时说明费用暂不可用', () => {
+    expect(formatCost(null)).toBe(COST_UNAVAILABLE_TEXT);
+    expect(COST_UNAVAILABLE_TEXT).toBe('费用暂不可用（仅统计 token）');
+  });
+});
+
 describe('formatCallCost', () => {
   it('按这次调用的模型单价算出金额', () => {
     // deepseek-chat：1K prompt * 0.002 + 0.5K completion * 0.008 = 0.006
     expect(formatCallCost(record())).toBe('¥0.0060');
+  });
+
+  it('没有内置单价的供应商显示「费用暂不可用」', () => {
+    expect(formatCallCost(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' }))).toBe(
+      COST_UNAVAILABLE_TEXT,
+    );
   });
 });
 

@@ -11,7 +11,7 @@ import {
   saveHistory,
   type BillHistoryEntry,
 } from '@/lib/client/bill-history';
-import { formatCny, formatDateTime, formatTokens } from '@/lib/client/bill-format';
+import { formatCost, formatDateTime, formatTokens } from '@/lib/client/bill-format';
 import { browserStorage } from '@/lib/client/settings-storage';
 import { PROVIDER_LABELS } from '@/lib/llm/providers';
 import { BillPanel } from '@/components/BillPanel';
@@ -76,7 +76,7 @@ export function BillHistory({ latestBill }: BillHistoryProps) {
                 <span>{PROVIDER_LABELS[entry.bill.provider]}</span>
                 <span>{entry.bill.model}</span>
                 <span>{formatTokens(entry.bill.totals.totalTokens)} tokens</span>
-                <span className="bill-cost">{formatCny(entry.bill.totals.estimatedCostCny)}</span>
+                <span className="bill-cost">{formatCost(entry.bill.totals.estimatedCostCny)}</span>
                 <button type="button" onClick={() => remove(entry.gameId)}>
                   删除
                 </button>
