@@ -106,6 +106,8 @@ export function toPublicView(state: GameState): PublicGameView {
     log: [...state.log],
     winner: state.winner,
     errorMessage: state.errorMessage,
+    // 账单不进 GameState，只靠 bill 事件推给浏览器。
+    bill: null,
   };
 }
 

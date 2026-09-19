@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { buildBill } from '@/lib/billing/estimate';
 import { applyEvent } from '@/lib/client/apply-event';
 import {
   PHASE_LABELS,
@@ -24,6 +25,7 @@ const BASE: PublicGameView = {
   log: [],
   winner: null,
   errorMessage: null,
+  bill: null,
 };
 
 describe('applyEvent', () => {
@@ -114,5 +116,29 @@ describe('format 辅助', () => {
     };
     expect(currentRoundVotes(view)).toHaveLength(2);
     expect(voteTally(view)).toEqual({ 3: 2 });
+  });
+});
+
+describe('applyEvent 的 bill 分支', () => {
+  const bill = buildBill({
+    gameId: 'g-1',
+    provider: 'deepseek',
+    model: 'deepseek-chat',
+    finishedAt: 42,
+    records: [],
+  });
+
+  it('把账单挂到视图上，其余字段不动', () => {
+    const next = applyEvent(BASE, { type: 'bill', bill });
+
+    expect(next.bill).toBe(bill);
+    expect(next.log).toEqual(BASE.log);
+    expect(next.phase).toBe(BASE.phase);
+    expect(next.winner).toBeNull();
+  });
+
+  it('不改原对象', () => {
+    applyEvent(BASE, { type: 'bill', bill });
+    expect(BASE.bill).toBeNull();
   });
 });

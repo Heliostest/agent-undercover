@@ -53,6 +53,8 @@ export function applyEvent(view: PublicGameView, event: GameEvent): PublicGameVi
               ],
         winner: event.winner,
       };
+    case 'bill':
+      return { ...view, bill: event.bill };
     case 'error':
       return { ...view, phase: 'error', activeSeatId: null, errorMessage: event.message };
   }
