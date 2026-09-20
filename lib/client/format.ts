@@ -18,10 +18,22 @@ export function seatName(seats: PublicSeat[], seatId: number): string {
   return seats.find((seat) => seat.id === seatId)?.name ?? `座位${seatId}`;
 }
 
-export function currentRoundVotes(view: PublicGameView): VoteEntry[] {
+function roundVotes(view: PublicGameView): VoteEntry[] {
   return view.log.filter(
     (entry): entry is VoteEntry => entry.kind === 'vote' && entry.round === view.round,
   );
+}
+
+/** 本轮正在进行的是第几次投票；还没人投票时算第 1 次。 */
+export function currentBallot(view: PublicGameView): number {
+  return roundVotes(view).reduce((max, entry) => Math.max(max, entry.ballot), 1);
+}
+
+/** 只返回本轮最后一次投票：平票重投的两次票不能并在一起，否则 4 人局会显示 8 票。 */
+export function currentRoundVotes(view: PublicGameView): VoteEntry[] {
+  const votes = roundVotes(view);
+  const ballot = votes.reduce((max, entry) => Math.max(max, entry.ballot), 1);
+  return votes.filter((entry) => entry.ballot === ballot);
 }
 
 export function voteTally(view: PublicGameView): Record<number, number> {

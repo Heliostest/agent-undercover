@@ -140,6 +140,14 @@ describe('runGame', () => {
 
     const votes = events.filter((event) => event.type === 'vote');
     expect(votes.length).toBeGreaterThanOrEqual(8);
+    // 同一游戏轮里的两次投票必须分得开，否则前端和 agent 都会把它们当成一次改票。
+    expect(votes.slice(0, 4).map((event) => event.ballot)).toEqual([1, 1, 1, 1]);
+    expect(votes.slice(4, 8).map((event) => event.ballot)).toEqual([2, 2, 2, 2]);
+    expect(votes.slice(0, 8).every((event) => event.round === 1)).toBe(true);
+    const ballots = state.log
+      .filter((entry) => entry.kind === 'vote' && entry.round === 1)
+      .map((entry) => (entry.kind === 'vote' ? entry.ballot : 0));
+    expect(ballots).toEqual([1, 1, 1, 1, 2, 2, 2, 2]);
     const elimination = state.log.find((entry) => entry.kind === 'elimination');
     expect(elimination).toEqual({ kind: 'elimination', round: 1, seatId: 1, tieBreak: false });
   });

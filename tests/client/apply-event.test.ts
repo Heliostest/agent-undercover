@@ -5,6 +5,7 @@ import { applyEvent } from '@/lib/client/apply-event';
 import {
   PHASE_LABELS,
   WINNER_LABELS,
+  currentBallot,
   currentRoundVotes,
   seatName,
   voteTally,
@@ -49,17 +50,26 @@ describe('applyEvent', () => {
     ]);
   });
 
-  it('vote 事件追加一条投票日志', () => {
+  it('vote 事件追加一条投票日志，并带上第几次投票', () => {
     const next = applyEvent(BASE, {
       type: 'vote',
       round: 1,
+      ballot: 2,
       seatId: 0,
       targetSeatId: 3,
       reason: '太安静',
       fallback: true,
     });
     expect(next.log).toEqual([
-      { kind: 'vote', round: 1, seatId: 0, targetSeatId: 3, reason: '太安静', fallback: true },
+      {
+        kind: 'vote',
+        round: 1,
+        ballot: 2,
+        seatId: 0,
+        targetSeatId: 3,
+        reason: '太安静',
+        fallback: true,
+      },
     ]);
   });
 
@@ -108,14 +118,35 @@ describe('format 辅助', () => {
       ...BASE,
       round: 2,
       log: [
-        { kind: 'vote', round: 1, seatId: 0, targetSeatId: 1, reason: 'a', fallback: false },
-        { kind: 'vote', round: 2, seatId: 0, targetSeatId: 3, reason: 'b', fallback: false },
-        { kind: 'vote', round: 2, seatId: 1, targetSeatId: 3, reason: 'c', fallback: false },
+        { kind: 'vote', round: 1, ballot: 1, seatId: 0, targetSeatId: 1, reason: 'a', fallback: false },
+        { kind: 'vote', round: 2, ballot: 1, seatId: 0, targetSeatId: 3, reason: 'b', fallback: false },
+        { kind: 'vote', round: 2, ballot: 1, seatId: 1, targetSeatId: 3, reason: 'c', fallback: false },
         { kind: 'speech', round: 2, seatId: 2, text: 'x', fallback: false },
       ],
     };
     expect(currentRoundVotes(view)).toHaveLength(2);
     expect(voteTally(view)).toEqual({ 3: 2 });
+  });
+
+  it('平票重投后 currentRoundVotes 只留最后一次投票', () => {
+    const view: PublicGameView = {
+      ...BASE,
+      round: 1,
+      log: [
+        { kind: 'vote', round: 1, ballot: 1, seatId: 0, targetSeatId: 1, reason: 'a', fallback: false },
+        { kind: 'vote', round: 1, ballot: 1, seatId: 1, targetSeatId: 0, reason: 'b', fallback: false },
+        { kind: 'vote', round: 1, ballot: 2, seatId: 0, targetSeatId: 1, reason: 'c', fallback: false },
+        { kind: 'vote', round: 1, ballot: 2, seatId: 1, targetSeatId: 1, reason: 'd', fallback: false },
+      ],
+    };
+    expect(currentRoundVotes(view).map((entry) => entry.reason)).toEqual(['c', 'd']);
+    expect(voteTally(view)).toEqual({ 1: 2 });
+    expect(currentBallot(view)).toBe(2);
+  });
+
+  it('本轮还没投票时 currentBallot 回到 1', () => {
+    expect(currentRoundVotes({ ...BASE, round: 1 })).toEqual([]);
+    expect(currentBallot({ ...BASE, round: 1 })).toBe(1);
   });
 });
 

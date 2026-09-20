@@ -44,8 +44,16 @@ export function publish(session: GameSession, event: GameEvent): void {
   }
 }
 
-export function subscribe(session: GameSession, listener: GameEventListener): () => void {
-  for (const event of [...session.events]) {
+/**
+ * fromIndex 是水位线：只回放它之后的事件。
+ * SSE 路由先取 snapshot 再用 events.length 当水位线，避免快照里的日志被回放二次追加。
+ */
+export function subscribe(
+  session: GameSession,
+  listener: GameEventListener,
+  fromIndex = 0,
+): () => void {
+  for (const event of session.events.slice(Math.max(0, fromIndex))) {
     listener(event);
   }
   session.subscribers.add(listener);

@@ -71,6 +71,7 @@ describe('突变辅助', () => {
     recordVote(state, {
       kind: 'vote',
       round: 1,
+      ballot: 1,
       seatId: 0,
       targetSeatId: 2,
       reason: '他很虚',

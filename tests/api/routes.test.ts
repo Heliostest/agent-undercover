@@ -149,31 +149,52 @@ describe('GET /api/games/[gameId]/events', () => {
     expect(response.status).toBe(404);
   });
 
-  it('先推 snapshot，再回放事件，终局后关流', async () => {
+  it('开局就接入时先推 snapshot，再按序推后续事件，终局后关流', async () => {
     const session = startGame({ rng: () => 0 });
-    await session.completion;
 
     const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
     expect(response.headers.get('content-type')).toBe('text/event-stream; charset=utf-8');
 
     const body = await readStream(response);
+    await session.completion;
+
     expect(body.startsWith('event: snapshot\ndata: ')).toBe(true);
     expect(body).toContain('event: speech\ndata: ');
     expect(body).toContain('event: vote\ndata: ');
     expect(body).toContain('event: result\ndata: ');
 
     const snapshotLine = body.split('\n\n')[0].split('data: ')[1];
-    const snapshot = JSON.parse(snapshotLine) as { seats: unknown[]; bill: unknown };
+    const snapshot = JSON.parse(snapshotLine) as { seats: unknown[]; bill: unknown; log: unknown[] };
     expect(snapshot.seats).toHaveLength(4);
+    expect(snapshot.log).toEqual([]);
     expect(snapshot.bill).toBeNull();
   });
 
-  it('bill 帧排在终局 result 帧之前，关流前一定送达', async () => {
+  it('终局后再接入只拿 snapshot，不重放已在 snapshot 里的事件', async () => {
     const session = startGame({ rng: () => 0 });
     await session.completion;
 
     const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
     const body = await readStream(response);
+
+    const snapshotLine = body.split('\n\n')[0].split('data: ')[1];
+    const snapshot = JSON.parse(snapshotLine) as { log: unknown[]; winner: string | null; bill: unknown };
+    expect(snapshot.log.length).toBeGreaterThan(0);
+    expect(snapshot.winner).not.toBeNull();
+    // 重连时日志已经在 snapshot 里，再回放一遍就会把日志刷成两份。
+    expect(body).not.toContain('event: speech\ndata: ');
+    expect(body).not.toContain('event: vote\ndata: ');
+    expect(body).not.toContain('event: result\ndata: ');
+    // 账单不进 GameState，重连时得靠 snapshot 把它带上，否则刷新后账单就没了。
+    expect(snapshot.bill).not.toBeNull();
+  });
+
+  it('bill 帧排在终局 result 帧之前，关流前一定送达', async () => {
+    const session = startGame({ rng: () => 0 });
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+    await session.completion;
 
     const billIndex = body.indexOf('event: bill\ndata: ');
     const finalResultIndex = body.lastIndexOf('event: result\ndata: ');

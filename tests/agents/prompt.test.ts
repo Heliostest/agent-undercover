@@ -25,7 +25,7 @@ const VIEW: AgentView = {
   ],
   log: [
     { kind: 'speech', round: 1, seatId: 0, text: '白白的，早上喝', fallback: false },
-    { kind: 'vote', round: 1, seatId: 0, targetSeatId: 1, reason: '他太笼统', fallback: false },
+    { kind: 'vote', round: 1, ballot: 1, seatId: 0, targetSeatId: 1, reason: '他太笼统', fallback: false },
     { kind: 'elimination', round: 1, seatId: 1, tieBreak: true },
   ],
   aliveOtherIds: [0, 3],
@@ -53,6 +53,19 @@ describe('renderTranscript', () => {
   it('没有记录时给出占位文案', () => {
     expect(renderTranscript({ ...VIEW, log: [] })).toBe('（暂无公开记录）');
   });
+
+  it('平票重投的那一次单独标出来，不会被当成改票', () => {
+    const lines = renderTranscript({
+      ...VIEW,
+      log: [
+        { kind: 'vote', round: 1, ballot: 1, seatId: 0, targetSeatId: 1, reason: '他太笼统', fallback: false },
+        { kind: 'vote', round: 1, ballot: 2, seatId: 0, targetSeatId: 3, reason: '重投改投他', fallback: false },
+      ],
+    }).split('\n');
+
+    expect(lines[0]).toBe('第1轮 投票 阿岚 → 小柯，理由：他太笼统');
+    expect(lines[1]).toBe('第1轮第2次投票 阿岚 → 沉舟，理由：重投改投他');
+  });
 });
 
 describe('buildSpeechMessages', () => {
@@ -69,7 +82,7 @@ describe('buildSpeechMessages', () => {
     const unchallenged = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
     const challenged = buildSpeechMessages(PERSONAS[2], {
       ...VIEW,
-      log: [...VIEW.log, { kind: 'vote', round: 1, seatId: 3, targetSeatId: 2, reason: '他太直白', fallback: false }],
+      log: [...VIEW.log, { kind: 'vote', round: 1, ballot: 1, seatId: 3, targetSeatId: 2, reason: '他太直白', fallback: false }],
     })[1].content;
     expect(unchallenged).not.toContain('有人投过你');
     expect(challenged).toContain('有人投过你');

@@ -69,6 +69,7 @@ async function collectVotes(
   deps: JudgeDeps,
   voterIds: number[],
   targetPool: number[],
+  ballot: number,
   ensureTime: EnsureTime,
 ): Promise<VoteEntry[]> {
   const entries: VoteEntry[] = [];
@@ -88,6 +89,7 @@ async function collectVotes(
     const entry: VoteEntry = {
       kind: 'vote',
       round: state.round,
+      ballot,
       seatId: voterId,
       targetSeatId: result.targetSeatId,
       reason: result.reason,
@@ -98,6 +100,7 @@ async function collectVotes(
     deps.emit({
       type: 'vote',
       round: entry.round,
+      ballot: entry.ballot,
       seatId: entry.seatId,
       targetSeatId: entry.targetSeatId,
       reason: entry.reason,
@@ -119,7 +122,7 @@ async function runVotePhase(
   for (let voteRound = 1; voteRound <= MAX_VOTE_ROUNDS; voteRound += 1) {
     ensureTime();
     setPhase(state, deps, 'vote', null);
-    const entries = await collectVotes(state, deps, voterIds, targetPool, ensureTime);
+    const entries = await collectVotes(state, deps, voterIds, targetPool, voteRound, ensureTime);
     const leaders = topCandidates(tallyVotes(entries));
     if (leaders.length === 1) {
       return { seatId: leaders[0], tieBreak: false };

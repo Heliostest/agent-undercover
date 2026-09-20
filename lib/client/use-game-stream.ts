@@ -78,7 +78,22 @@ export function useGameStream(): GameStream {
     let terminal = false;
 
     source.addEventListener('snapshot', (raw) => {
-      setView(JSON.parse((raw as MessageEvent<string>).data) as PublicGameView);
+      const snapshot = JSON.parse((raw as MessageEvent<string>).data) as PublicGameView;
+      setView(snapshot);
+      if (snapshot.bill !== null) {
+        setBill(snapshot.bill);
+      }
+      // 断线重连时对局可能已经结束：服务端不会再补终局事件，这里直接按快照收尾。
+      if (snapshot.errorMessage !== null) {
+        terminal = true;
+        setErrorMessage(snapshot.errorMessage);
+        setStatus('error');
+        source.close();
+      } else if (snapshot.winner !== null) {
+        terminal = true;
+        setStatus('finished');
+        source.close();
+      }
     });
 
     for (const name of EVENT_NAMES) {

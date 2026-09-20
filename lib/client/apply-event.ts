@@ -26,6 +26,7 @@ export function applyEvent(view: PublicGameView, event: GameEvent): PublicGameVi
           {
             kind: 'vote',
             round: event.round,
+            ballot: event.ballot,
             seatId: event.seatId,
             targetSeatId: event.targetSeatId,
             reason: event.reason,

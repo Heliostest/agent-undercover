@@ -4,7 +4,7 @@ import { checkWinner, pickRandom, tallyVotes, topCandidates } from '@/lib/game/r
 import type { Role, Seat, VoteEntry } from '@/lib/game/types';
 
 function vote(seatId: number, targetSeatId: number): VoteEntry {
-  return { kind: 'vote', round: 1, seatId, targetSeatId, reason: '理由', fallback: false };
+  return { kind: 'vote', round: 1, ballot: 1, seatId, targetSeatId, reason: '理由', fallback: false };
 }
 
 function seat(id: number, role: Role, alive: boolean): Seat {
