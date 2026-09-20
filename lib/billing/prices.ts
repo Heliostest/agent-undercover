@@ -14,12 +14,13 @@ export interface ProviderPrices {
 /**
  * 有内置单价的供应商：只有智谱。
  *
- * DeepSeek 与 OpenRouter 都不在这个表里，账单只统计 token：
+ * DeepSeek / OpenRouter / 本地 OmniRoute 都不在这个表里，账单只统计 token：
  * - OpenRouter 的模型来自上游多家厂商、按美元实时计价；
- * - DeepSeek 有阶梯价、缓存折扣与优惠时段，本地静态单价算出来的钱和官方账单对不上。
- * 两家都宁可显示「费用暂不可用」，也不编一个看着像真的假价。
+ * - DeepSeek 有阶梯价、缓存折扣与优惠时段，本地静态单价算出来的钱和官方账单对不上；
+ * - OmniRoute 聚合本地上游，费用以各上游账单为准，这里不编造金额。
+ * 这些供应商都宁可显示「费用暂不可用」，也不编一个看着像真的假价。
  */
-export type PricedProvider = Exclude<LlmProvider, 'deepseek' | 'openrouter'>;
+export type PricedProvider = Exclude<LlmProvider, 'deepseek' | 'openrouter' | 'omniroute'>;
 
 /**
  * 单位：CNY / 1K tokens。这是全站唯一的价目表，改价只动这里。

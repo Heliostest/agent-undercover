@@ -24,9 +24,10 @@ describe('PRICE_TABLE', () => {
     expect(PRICE_TABLE.zhipu.models['glm-4-flash']).toBeDefined();
   });
 
-  it('不为 DeepSeek / OpenRouter 编造单价', () => {
+  it('不为 DeepSeek / OpenRouter / OmniRoute 编造单价', () => {
     expect(JSON.stringify(PRICE_TABLE)).not.toContain('deepseek');
     expect(JSON.stringify(PRICE_TABLE)).not.toContain('openrouter');
+    expect(JSON.stringify(PRICE_TABLE)).not.toContain('omniroute');
   });
 });
 
@@ -35,6 +36,7 @@ describe('isPricedProvider', () => {
     expect(isPricedProvider('zhipu')).toBe(true);
     expect(isPricedProvider('deepseek')).toBe(false);
     expect(isPricedProvider('openrouter')).toBe(false);
+    expect(isPricedProvider('omniroute')).toBe(false);
   });
 });
 
@@ -57,9 +59,10 @@ describe('priceFor', () => {
     expect(priceFor('zhipu', 'glm-未来版')).toEqual(PRICE_TABLE.zhipu.fallback);
   });
 
-  it('DeepSeek 与 OpenRouter 返回 null', () => {
+  it('DeepSeek / OpenRouter / OmniRoute 返回 null', () => {
     expect(priceFor('deepseek', 'deepseek-chat')).toBeNull();
     expect(priceFor('openrouter', 'openai/gpt-4o-mini')).toBeNull();
+    expect(priceFor('omniroute', 'any')).toBeNull();
   });
 });
 
@@ -74,5 +77,6 @@ describe('isKnownModel', () => {
   it('没有价目表的供应商一律为 false', () => {
     expect(isKnownModel('deepseek', 'deepseek-chat')).toBe(false);
     expect(isKnownModel('openrouter', 'openai/gpt-4o-mini')).toBe(false);
+    expect(isKnownModel('omniroute', 'any')).toBe(false);
   });
 });

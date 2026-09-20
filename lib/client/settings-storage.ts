@@ -62,7 +62,7 @@ export function validateSettings(settings: LlmSettings): string | null {
   if (settings.model.trim() === '') {
     return '请先填写模型名再开局';
   }
-  if (settings.apiKey.trim() === '') {
+  if (settings.provider !== 'omniroute' && settings.apiKey.trim() === '') {
     return '请先填写 API Key 再开局';
   }
   return null;
@@ -76,7 +76,7 @@ export function buildStartRequestBody(settings: LlmSettings): {
   return {
     provider: settings.provider,
     model: settings.model.trim(),
-    apiKey: settings.apiKey.trim(),
+    apiKey: settings.provider === 'omniroute' ? '' : settings.apiKey.trim(),
   };
 }
 
