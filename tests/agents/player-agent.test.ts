@@ -4,6 +4,7 @@ import { PERSONAS } from '@/lib/agents/personas';
 import {
   FALLBACK_VOTE_REASON,
   PlayerAgent,
+  VOTE_TIMEOUT_MS,
 } from '@/lib/agents/player-agent';
 import type { UsageRecordInput } from '@/lib/billing/ledger';
 import type { AgentView } from '@/lib/game/types';
@@ -132,6 +133,23 @@ describe('PlayerAgent.speak', () => {
     expect(llm.complete).toHaveBeenCalledTimes(1);
   });
 
+  it('整局取消信号会连带取消发言请求', async () => {
+    const controller = new AbortController();
+    let signal: AbortSignal | undefined;
+    const complete = vi.fn<LlmClient['complete']>(async (_messages, options) => {
+      signal = options?.signal;
+      controller.abort();
+      return new Promise(() => {});
+    });
+    const llm: LlmClient = { provider: 'deepseek', model: 'deepseek-flash', complete };
+
+    await expect(
+      new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW, controller.signal),
+    ).rejects.toThrow();
+    expect(signal?.aborted).toBe(true);
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
   it('90 秒到期会取消请求并停止重试，即使模型客户端不响应取消', async () => {
     vi.useFakeTimers();
     let signal: AbortSignal | undefined;
@@ -210,6 +228,56 @@ describe('PlayerAgent.vote', () => {
       reason: FALLBACK_VOTE_REASON,
       fallback: true,
     });
+  });
+
+  it('投票同样关闭客户端内重试，重试预算由这一层独占', async () => {
+    const complete = vi.fn<LlmClient['complete']>(async () => ({
+      text: '{"vote":1,"reason":"描述太笼统"}',
+      usage: SAMPLE_USAGE,
+    }));
+    const llm: LlmClient = { provider: 'zhipu', model: 'glm-4-flash', complete };
+
+    await new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).vote(VIEW, [0, 1, 3], () => 0);
+
+    expect(complete.mock.calls[0][1]?.maxRetries).toBe(0);
+    expect(complete.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('投票等待到期会取消请求并抛错，不会无声地拖满整局时间', async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const complete = vi.fn<LlmClient['complete']>(async (_messages, options) => {
+      signal = options?.signal;
+      return new Promise(() => {});
+    });
+    const llm: LlmClient = { provider: 'deepseek', model: 'deepseek-flash', complete };
+
+    const result = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 })
+      .vote(VIEW, [0, 1, 3], () => 0)
+      .catch((error: Error) => error.message);
+    await vi.advanceTimersByTimeAsync(VOTE_TIMEOUT_MS);
+
+    expect(await result).toContain('60 秒');
+    expect(signal?.aborted).toBe(true);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('整局取消信号会连带取消投票请求，并且不再重试', async () => {
+    const controller = new AbortController();
+    let signal: AbortSignal | undefined;
+    const complete = vi.fn<LlmClient['complete']>(async (_messages, options) => {
+      signal = options?.signal;
+      controller.abort();
+      return new Promise(() => {});
+    });
+    const llm: LlmClient = { provider: 'deepseek', model: 'deepseek-flash', complete };
+
+    await expect(
+      new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).vote(VIEW, [0, 1, 3], () => 0, controller.signal),
+    ).rejects.toThrow();
+    expect(signal?.aborted).toBe(true);
+    expect(complete).toHaveBeenCalledTimes(1);
   });
 
   it('候选为空时抛错（Judge 不应该这样调用）', async () => {

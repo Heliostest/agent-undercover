@@ -57,7 +57,8 @@ export async function GET(
       // 先定格快照，再用当前事件数当水位线：快照里已经有的日志不再回放，重连才不会把日志刷成两份。
       const snapshot: PublicGameView = toPublicView(session.state);
       const watermark = session.events.length;
-      snapshot.bill = billBefore(session, watermark);
+      // 对局已经结束时账单就留在 session 上，直接取；进行中则只认水位线之前的那张。
+      snapshot.bill = session.finished ? session.lastBill ?? null : billBefore(session, watermark);
       controller.enqueue(encoder.encode(frame('snapshot', snapshot)));
 
       unsubscribe = subscribe(

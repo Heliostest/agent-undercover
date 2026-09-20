@@ -1,4 +1,4 @@
-import { PlayerAgent, type PlayerAgentDeps } from '@/lib/agents/player-agent';
+import { PlayerAgent, linkAbort, type PlayerAgentDeps } from '@/lib/agents/player-agent';
 import { extractJsonObject } from '@/lib/agents/prompt';
 import type { ThinkingStrategy } from '@/lib/agents/strategy';
 import type { AgentView, Persona, SeatAgent } from '@/lib/game/types';
@@ -111,8 +111,10 @@ export class ThinkingAgent implements SeatAgent {
   private memory: { decision: DecisionBrief | null; actualAction: string } | null = null;
   constructor(private readonly persona: Persona, private readonly deps: ThinkingDeps, private readonly strategy: Exclude<ThinkingStrategy, 'baseline'>) {}
 
-  private async plan(view: AgentView, phase: 'speak' | 'vote', candidates: number[]): Promise<DecisionBrief | null> {
+  private async plan(view: AgentView, phase: 'speak' | 'vote', candidates: number[], external?: AbortSignal): Promise<DecisionBrief | null> {
     const controller = new AbortController();
+    // 整局被取消时，思考这一步也要立刻停掉，别再白烧 token。
+    const detach = linkAbort(controller, external);
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => { controller.abort(); reject(new Error('planning timeout')); }, THINK_TIMEOUT_MS);
@@ -147,6 +149,7 @@ export class ThinkingAgent implements SeatAgent {
       return null;
     } finally {
       clearTimeout(timer);
+      detach();
     }
   }
 
@@ -162,18 +165,18 @@ export class ThinkingAgent implements SeatAgent {
     return new PlayerAgent(this.persona, { ...this.deps, llm });
   }
 
-  async speak(view: AgentView) {
-    const brief = await this.plan(view, 'speak', []);
+  async speak(view: AgentView, signal?: AbortSignal) {
+    const brief = await this.plan(view, 'speak', [], signal);
     this.deps.onPlan?.(brief ? 'ok' : 'fallback');
-    const result = await this.actor(brief).speak(view);
+    const result = await this.actor(brief).speak(view, signal);
     this.memory = { decision: brief, actualAction: result.text };
     return result;
   }
 
-  async vote(view: AgentView, candidates: number[], rng: () => number) {
-    const brief = await this.plan(view, 'vote', candidates);
+  async vote(view: AgentView, candidates: number[], rng: () => number, signal?: AbortSignal) {
+    const brief = await this.plan(view, 'vote', candidates, signal);
     this.deps.onPlan?.(brief ? 'ok' : 'fallback');
-    const result = await this.actor(brief).vote(view, candidates, rng);
+    const result = await this.actor(brief).vote(view, candidates, rng, signal);
     this.memory = { decision: brief, actualAction: JSON.stringify(result) };
     return result;
   }

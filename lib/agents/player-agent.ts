@@ -18,8 +18,14 @@ import {
 
 export const FALLBACK_VOTE_REASON = '（模型没有给出有效投票，已随机选择）';
 export const AGENT_MAX_ATTEMPTS = 2;
+/**
+ * 发言/投票的重试次数与墙上时钟时限是两道独立的闸：
+ * 时限包住整轮重试（不是每次尝试各给一份），所以 5 次尝试也不会把 90 秒乘成 450 秒。
+ * 投票比发言简单、只重试 2 次，时限收到 60 秒。
+ */
 export const SPEECH_MAX_ATTEMPTS = 5;
 export const SPEECH_TIMEOUT_MS = 90_000;
+export const VOTE_TIMEOUT_MS = 60_000;
 export const SPEECH_INITIAL_MAX_TOKENS = 1024;
 export const SPEECH_MAX_TOKENS = 4096;
 export const DEFAULT_AGENT_TEMPERATURE = 0.4;
@@ -39,20 +45,13 @@ export class PlayerAgent implements SeatAgent {
     private readonly deps: PlayerAgentDeps,
   ) {}
 
-  async speak(view: AgentView): Promise<SpeechResult> {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => {
-        controller.abort();
-        reject(new Error(`${view.seatName}发言等待超过 90 秒，已停止本局，请检查模型服务后重新开局`));
-      }, SPEECH_TIMEOUT_MS);
-    });
-    try {
-      return await Promise.race([this.retrySpeech(view, controller.signal), timeout]);
-    } finally {
-      clearTimeout(timer);
-    }
+  async speak(view: AgentView, signal?: AbortSignal): Promise<SpeechResult> {
+    return withDeadline(
+      SPEECH_TIMEOUT_MS,
+      `${view.seatName}发言等待超过 ${SPEECH_TIMEOUT_MS / 1000} 秒，已停止本局，请检查模型服务后重新开局`,
+      signal,
+      (deadlineSignal) => this.retrySpeech(view, deadlineSignal),
+    );
   }
 
   private async retrySpeech(view: AgentView, signal: AbortSignal): Promise<SpeechResult> {
@@ -128,14 +127,34 @@ export class PlayerAgent implements SeatAgent {
     });
   }
 
-  async vote(view: AgentView, candidateIds: number[], rng: () => number): Promise<VoteResult> {
+  async vote(
+    view: AgentView,
+    candidateIds: number[],
+    rng: () => number,
+    signal?: AbortSignal,
+  ): Promise<VoteResult> {
+    return withDeadline(
+      VOTE_TIMEOUT_MS,
+      `${view.seatName}投票等待超过 ${VOTE_TIMEOUT_MS / 1000} 秒，已停止本局，请检查模型服务后重新开局`,
+      signal,
+      (deadlineSignal) => this.retryVote(view, candidateIds, rng, deadlineSignal),
+    );
+  }
+
+  private async retryVote(
+    view: AgentView,
+    candidateIds: number[],
+    rng: () => number,
+    signal: AbortSignal,
+  ): Promise<VoteResult> {
     const baseMessages = buildVoteMessages(this.persona, view, candidateIds);
     let correction = '';
     for (let attempt = 0; attempt < AGENT_MAX_ATTEMPTS; attempt += 1) {
+      signal.throwIfAborted();
       const messages: LlmMessage[] = correction
         ? [...baseMessages, { role: 'user', content: correction }]
         : baseMessages;
-      const raw = await this.tryComplete(messages, 'vote');
+      const raw = await this.tryComplete(messages, 'vote', signal);
       if (raw === null) {
         continue;
       }
@@ -155,21 +174,76 @@ export class PlayerAgent implements SeatAgent {
     };
   }
 
-  /** 模型调用失败不向外抛：交给下一次尝试，用尽后由调用方走兜底。 */
-  private async tryComplete(messages: LlmMessage[], phase: UsagePhase): Promise<string | null> {
+  /** 模型调用失败不向外抛：交给下一次尝试，用尽后由调用方走兜底；只有取消要立刻传出去。 */
+  private async tryComplete(
+    messages: LlmMessage[],
+    phase: UsagePhase,
+    signal: AbortSignal,
+  ): Promise<string | null> {
     try {
       const completion = await this.deps.llm.complete(messages, {
         temperature: this.deps.temperature ?? DEFAULT_AGENT_TEMPERATURE,
+        // 重试由这一层统管，客户端再重试一遍会把请求数相乘。
+        maxRetries: 0,
+        signal,
       });
+      // 取消后迟到的响应不得再记账或参与决策。
+      signal.throwIfAborted();
       // 只要拿到了响应就记一笔：内容不合格要重试，但 token 已经花掉了。
       this.recordUsage(phase, completion.usage);
       return completion.text;
     } catch (error) {
+      signal.throwIfAborted();
       if (error instanceof LlmResponseError) {
         this.recordUsage(phase, error.usage);
       }
       return null;
     }
+  }
+}
+
+/** 外部（整局）取消信号并进本次调用的 controller：任一方触发都立刻停手。 */
+export function linkAbort(controller: AbortController, external?: AbortSignal): () => void {
+  if (!external) {
+    return () => {};
+  }
+  if (external.aborted) {
+    controller.abort(external.reason);
+    return () => {};
+  }
+  const forward = () => controller.abort(external.reason);
+  external.addEventListener('abort', forward, { once: true });
+  return () => external.removeEventListener('abort', forward);
+}
+
+/**
+ * 给「一次决策 + 它的全部重试」罩一层墙上时钟时限：
+ * 到点就取消在途请求并向外抛，外部取消信号走同一条路，
+ * 调用方绝不会因为模型不回话而无限期等下去。
+ */
+export async function withDeadline<T>(
+  timeoutMs: number,
+  timeoutMessage: string,
+  external: AbortSignal | undefined,
+  run: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  const detach = linkAbort(controller, external);
+  const timer = setTimeout(() => controller.abort(new Error(timeoutMessage)), timeoutMs);
+  const cancelled = new Promise<never>((_resolve, reject) => {
+    if (controller.signal.aborted) {
+      reject(controller.signal.reason);
+      return;
+    }
+    controller.signal.addEventListener('abort', () => reject(controller.signal.reason), {
+      once: true,
+    });
+  });
+  try {
+    return await Promise.race([run(controller.signal), cancelled]);
+  } finally {
+    clearTimeout(timer);
+    detach();
   }
 }
 

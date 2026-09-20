@@ -189,6 +189,35 @@ describe('GET /api/games/[gameId]/events', () => {
     expect(snapshot.bill).not.toBeNull();
   });
 
+  it('phase:result 帧排在终局 result 帧之前，顶栏不会停在投票轮', async () => {
+    const session = startGame({ rng: () => 0 });
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+    await session.completion;
+
+    const phaseResultIndex = body.indexOf('event: phase\ndata: {"type":"phase","phase":"result"');
+    const finalResultIndex = body.lastIndexOf('event: result\ndata: ');
+
+    expect(phaseResultIndex).toBeGreaterThan(-1);
+    expect(phaseResultIndex).toBeLessThan(finalResultIndex);
+  });
+
+  it('投票期间逐个推送 activeSeatId 帧，前端能跟着高亮', async () => {
+    const session = startGame({ rng: () => 0 });
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+    await session.completion;
+
+    const activeVoters = body
+      .split('\n\n')
+      .filter((frame) => frame.startsWith('event: phase\ndata: {"type":"phase","phase":"vote"'))
+      .map((frame) => (JSON.parse(frame.split('data: ')[1]) as { activeSeatId: number | null }).activeSeatId);
+
+    expect(activeVoters.filter((seatId) => seatId !== null).length).toBeGreaterThan(0);
+  });
+
   it('bill 帧排在终局 result 帧之前，关流前一定送达', async () => {
     const session = startGame({ rng: () => 0 });
 
