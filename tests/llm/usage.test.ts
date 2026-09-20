@@ -80,6 +80,39 @@ describe('parseUsage', () => {
     expect(usage.cacheReported).toBe(true);
   });
 
+  it('DeepSeek 的 hit 超过 prompt_tokens 时截断，miss 不会变成负数', () => {
+    const usage = parseUsage({
+      prompt_tokens: 50,
+      completion_tokens: 10,
+      prompt_cache_hit_tokens: 999,
+      prompt_cache_miss_tokens: 0,
+    });
+    expect(usage.cacheHitTokens).toBe(50);
+    expect(usage.cacheMissTokens).toBe(0);
+    expect(usage.cacheHitTokens + usage.cacheMissTokens).toBe(usage.promptTokens);
+  });
+
+  it('DeepSeek 的 hit + miss 超过 prompt_tokens 时以 hit 为准补齐 miss', () => {
+    const usage = parseUsage({
+      prompt_tokens: 50,
+      completion_tokens: 10,
+      prompt_cache_hit_tokens: 30,
+      prompt_cache_miss_tokens: 40,
+    });
+    expect(usage.cacheHitTokens).toBe(30);
+    expect(usage.cacheMissTokens).toBe(20);
+  });
+
+  it('只给了超额 miss 时 hit 不会变成负数', () => {
+    const usage = parseUsage({
+      prompt_tokens: 50,
+      completion_tokens: 10,
+      prompt_cache_miss_tokens: 999,
+    });
+    expect(usage.cacheHitTokens).toBe(0);
+    expect(usage.cacheMissTokens).toBe(50);
+  });
+
   it('映射 OpenAI / 智谱风格的 prompt_tokens_details.cached_tokens', () => {
     const usage = parseUsage({
       prompt_tokens: 120,

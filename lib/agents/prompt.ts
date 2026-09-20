@@ -119,22 +119,65 @@ export function buildVoteMessages(
   ];
 }
 
+/**
+ * 扫出所有花括号配对完整的顶层片段（字符串里的花括号不参与配对）。
+ * 「第一个 { 到最后一个 }」的老做法会把前后废话里的花括号一起圈进来，
+ * 比如「之前有人说 { 像牛奶 } 但我选 {"speech":"…"}」整段都解析不了。
+ */
+function balancedCandidates(text: string): string[] {
+  const candidates: string[] = [];
+  let start = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    } else if (char === '{') {
+      if (depth === 0) {
+        start = i;
+      }
+      depth += 1;
+    } else if (char === '}' && depth > 0) {
+      depth -= 1;
+      if (depth === 0) {
+        candidates.push(text.slice(start, i + 1));
+      }
+    }
+  }
+  return candidates;
+}
+
+/**
+ * 取最后一个能解析成对象的候选：模型习惯先说废话再给 JSON，
+ * 被要求改写时也常把最终答案放在末尾，最后一个可解析的片段才是它真正想交的。
+ */
 export function extractJsonObject(raw: string): Record<string, unknown> | null {
   const withoutFence = raw.replace(/```(?:json)?/gi, '');
-  const start = withoutFence.indexOf('{');
-  const end = withoutFence.lastIndexOf('}');
-  if (start === -1 || end <= start) {
-    return null;
-  }
-  try {
-    const parsed: unknown = JSON.parse(withoutFence.slice(start, end + 1));
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return null;
+  const candidates = balancedCandidates(withoutFence);
+  for (let i = candidates.length - 1; i >= 0; i -= 1) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(candidates[i]);
+    } catch {
+      continue;
     }
-    return parsed as Record<string, unknown>;
-  } catch {
-    return null;
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
   }
+  return null;
 }
 
 export function parseSpeechReply(raw: string, forbiddenWord: string): string | null {
