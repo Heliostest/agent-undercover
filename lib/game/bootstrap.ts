@@ -4,6 +4,7 @@ import { PERSONAS } from '@/lib/agents/personas';
 import { PlayerAgent } from '@/lib/agents/player-agent';
 import { createBillEmitter } from '@/lib/billing/bill-emitter';
 import { UsageLedger } from '@/lib/billing/ledger';
+import { createUsageSink } from '@/lib/billing/usage-emitter';
 import { runGame } from '@/lib/game/judge';
 import { putSession } from '@/lib/game/registry';
 import { createSession, publish, type GameSession } from '@/lib/game/session';
@@ -50,7 +51,11 @@ export function startGame(options: StartGameOptions = {}): GameSession {
   putSession(session);
 
   const ledger = new UsageLedger(now);
-  const onUsage = ledger.sink();
+  // 每次记账都顺带推一条 usage，浏览器不用等局末的 bill 就能看到真实用量。
+  const onUsage = createUsageSink({
+    ledger,
+    emit: (event) => publish(session, event),
+  });
 
   const agents = new Map<number, SeatAgent>(
     PERSONAS.map((persona, seatId) => [seatId, new PlayerAgent(persona, { llm, seatId, onUsage })]),

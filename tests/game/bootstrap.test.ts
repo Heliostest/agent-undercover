@@ -142,6 +142,34 @@ describe('startGame', () => {
     expect(billEvent.bill.totals.estimatedCostCny).toBeGreaterThanOrEqual(0);
   });
 
+  it('每次模型调用都当场推一条 usage，callId 与局末账单明细一一对应', async () => {
+    const session = startGame({ llm: fakeLlm(), rng: () => 0 });
+    await session.completion;
+
+    const billIndex = session.events.findIndex((event) => event.type === 'bill');
+    const usageEvents = session.events.filter((event) => event.type === 'usage');
+    const billEvent = session.events[billIndex];
+    if (billEvent.type !== 'bill') {
+      throw new Error('billIndex 指向的不是 bill 事件');
+    }
+
+    expect(usageEvents).toHaveLength(billEvent.bill.totals.calls);
+    // usage 是中局事件：必须全部排在 bill 之前，否则 SSE 已经关流了。
+    const lastUsageIndex = session.events.reduce(
+      (last, event, index) => (event.type === 'usage' ? index : last),
+      -1,
+    );
+    expect(lastUsageIndex).toBeLessThan(billIndex);
+    expect(usageEvents.map((event) => event.callId)).toEqual(
+      billEvent.bill.calls.map((call) => call.callId),
+    );
+    expect(new Set(usageEvents.map((event) => event.callId)).size).toBe(usageEvents.length);
+    expect(usageEvents.every((event) => event.provider === 'zhipu')).toBe(true);
+    expect(usageEvents.every((event) => event.promptTokens === 100)).toBe(true);
+    expect(usageEvents.every((event) => event.cacheHitTokens === 64)).toBe(true);
+    expect(JSON.stringify(usageEvents)).not.toContain('totalTokens');
+  });
+
   it('bill 事件与整局事件流里都不含 API Key', async () => {
     const session = startGame({
       llmConfig: { provider: 'zhipu', model: 'glm-4-flash', apiKey: 'sk-should-not-leak' },
