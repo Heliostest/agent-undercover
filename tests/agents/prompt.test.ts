@@ -139,6 +139,46 @@ describe('buildSpeechMessages', () => {
     expect(content).toContain('thought');
     expect(content).toContain('不会给任何人看');
   });
+
+  it('已有人发言时，thought 要先判断谁同边、再判断谁对不上，最后才计划自己怎么说', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    const sameSide = content.indexOf('和你的词像是同一边');
+    const opposite = content.indexOf('明显和你对不上');
+    const plan = content.indexOf('最后才说你这轮打算藏什么');
+
+    expect(sameSide).toBeGreaterThan(-1);
+    expect(opposite).toBeGreaterThan(sameSide);
+    expect(plan).toBeGreaterThan(opposite);
+  });
+
+  it('自己是第一个开口的人时不要求对齐判断，只规划自己的发言', () => {
+    const content = buildSpeechMessages(PERSONAS[2], { ...VIEW, round: 1, log: [] })[1].content;
+    expect(content).toContain('还没有人发言');
+    expect(content).not.toContain('和你的词像是同一边');
+    expect(content).not.toContain('明显和你对不上');
+  });
+
+  it('只有投票和出局、没人发过言时，同样按第一个开口的人处理', () => {
+    // 首轮平票重投后有人出局，日志非空但一条发言都没有：没有可对齐的话可听。
+    const content = buildSpeechMessages(PERSONAS[2], {
+      ...VIEW,
+      log: [
+        { kind: 'vote', round: 1, ballot: 1, seatId: 0, targetSeatId: 1, reason: '他太笼统', fallback: false },
+        { kind: 'elimination', round: 1, seatId: 1, tieBreak: true },
+      ],
+    })[1].content;
+    expect(content).toContain('还没有人发言');
+    expect(content).not.toContain('和你的词像是同一边');
+  });
+
+  it('两种情形下 thought 都允许写出自己的词，speech 仍禁止泄词', () => {
+    const views: AgentView[] = [VIEW, { ...VIEW, round: 1, log: [] }];
+    for (const view of views) {
+      const content = buildSpeechMessages(PERSONAS[2], view)[1].content;
+      expect(content).toContain('这里可以直接写出你的词，因为不会给任何人看');
+      expect(content).toContain('绝对不能写出词面本身');
+    }
+  });
 });
 
 describe('buildVoteMessages', () => {

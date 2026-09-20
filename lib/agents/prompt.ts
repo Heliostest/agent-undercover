@@ -69,6 +69,18 @@ function speechStrategy(view: AgentView): string {
   ].join('\n');
 }
 
+/**
+ * 对齐判断得有话可对：公开记录里一条发言都没有时（自己是第一个开口的人），
+ * 再逼它点名谁同边、谁对不上，只会凭空编出一个怀疑对象，所以那种局面只让它规划自己怎么说。
+ */
+function thoughtPlan(view: AgentView): string {
+  const hasPriorSpeech = view.log.some((entry) => entry.kind === 'speech');
+  if (!hasPriorSpeech) {
+    return 'thought 写 1~3 句你真正的判断：现在还没有人发言，别凭空猜谁跟你一边、谁可疑，只规划你这轮自己先说什么、藏什么。这里可以直接写出你的词，因为不会给任何人看。';
+  }
+  return 'thought 写 1~3 句你真正的判断，按这个顺序写：先点名谁的话听起来和你的词像是同一边，再点名谁明显和你对不上，最后才说你这轮打算藏什么、怎么说。这里可以直接写出你的词，因为不会给任何人看。';
+}
+
 export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessage[] {
   return [
     { role: 'system', content: persona.systemPrompt },
@@ -82,7 +94,7 @@ export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessa
         renderTranscript(view),
         speechStrategy(view),
         THOUGHT_BRIEF,
-        'thought 写 1~3 句你真正的判断：你觉得自己像不像多数派、谁可疑、这轮打算藏什么。这里可以直接写出你的词，因为不会给任何人看。',
+        thoughtPlan(view),
         'speech 只写 1~2 句生活里的短话，尽量 20~45 个汉字，说完就收，不必每次都反问大家。不要列清单或做总结。绝对不能写出词面本身，也不能拆字、谐音或拼音暗示；不要复述别人的原句。',
         '只输出 JSON，格式严格为：{"thought":"你的内心推理","speech":"你的发言"}',
       ].join('\n'),
