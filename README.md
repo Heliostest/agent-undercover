@@ -31,11 +31,34 @@ API Key **不**通过环境变量配置：它只随 `POST /api/games` 的请求�
 | 命令 | 作用 |
 |------|------|
 | `npm run dev` | 本地开发服务器 |
+| `npm run dev:tunnel` | 本地 Next + cloudflared quick tunnel（需本机已装 cloudflared） |
 | `npm run build` | 生产构建 |
 | `npm start` | 跑生产构建 |
 | `npm test` | Vitest 全量单测（不发任何真实模型请求） |
 | `npm run test:watch` | Vitest watch 模式 |
 | `npm run typecheck` | `tsc --noEmit` |
+
+## 远程测试（cloudflared）
+
+想在手机或别人的浏览器上看这台机器跑的对局时，用 cloudflared 把本地 3000 端口临时暴露出去。
+
+### 默认：quick tunnel
+
+```bash
+npm run dev:tunnel
+```
+
+脚本会在本地 3000 端口没监听时先起 `npm run dev`（已经在跑就直接复用），再启动 cloudflared quick tunnel。打开终端里打印的 `https://*.trycloudflare.com` 就是远程入口。这条 URL 每次启动都不一样，关掉脚本即失效；不需要 Cloudflare 账号，也不需要任何凭证。本机没装 cloudflared 时脚本会直接报错并给出安装提示。
+
+### 可选：命名隧道（自备域名）
+
+想要一个固定域名时，可以自己建命名隧道——它**不是**本仓库的默认路径，没有对应脚本：
+
+1. `cloudflared tunnel login` 后 `cloudflared tunnel create <name>`，会在本机生成隧道凭证 JSON。
+2. 写一份 `config.yml`，`ingress` 指到 `http://localhost:3000`，末尾留一条兜底 `service: http_status:404`。
+3. `cloudflared tunnel route dns <name> <hostname>` 把域名解析到这条隧道，再用 `cloudflared tunnel run <name>` 启动。
+
+**凭证 JSON 与 `config.yml` 留在本机，不要提交进仓库。**
 
 ## 游戏规则（v1）
 
@@ -86,7 +109,7 @@ docs/superpowers/specs/           设计文档
 tests/                            Vitest 单测
 ```
 
-SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vote`、`result`、`bill`、`error`。`snapshot` 定格当前公开视图，之后只推快照之后发生的事件（按水位线订阅），重连或刷新都不会把日志追加成两份；对局已经结束时只发一条含账单的 `snapshot` 就关流。`vote` 事件带 `ballot`（本游戏轮里的第几次投票），平票重投是第 2 次，票数统计只看最后一次。投票阶段每轮到一个人就推一条带 `activeSeatId` 的 `phase` 事件，前端据此高亮当前投票人；一轮收完票后再推一条 `activeSeatId` 为 null 的 `phase`。`phase: 'result'` 与 `bill` 都排在终局事件之前推送（SSE 一见终局事件就关流，排在它后面的帧到不了浏览器），`bill` 带这一局每次模型调用的 token 与缓存明细；默认视图**不包含**任何人的身份与私有词，也**不包含** API Key。
+SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vote`、`result`、`usage`、`bill`、`error`。`snapshot` 定格当前公开视图，之后只推快照之后发生的事件（按水位线订阅），重连或刷新都不会把日志追加成两份；对局已经结束时只发一条含账单的 `snapshot` 就关流。`vote` 事件带 `ballot`（本游戏轮里的第几次投票），平票重投是第 2 次，票数统计只看最后一次。投票阶段每轮到一个人就推一条带 `activeSeatId` 的 `phase` 事件，前端据此高亮当前投票人；一轮收完票后再推一条 `activeSeatId` 为 null 的 `phase`。`usage` 在每次成功的模型调用记账之后立刻推一条，带供应商真实返回的 prompt / completion / 缓存 token，页面「实时用量」面板据此中局追加行；每条带一个 `callId`，重连时 `snapshot` 会把已发生的 `usageLog` 一起带回来，客户端按 `callId` 去重，刷新或断线重连都不会把同一次调用记两遍。`phase: 'result'` 与 `bill` 都排在终局事件之前推送（SSE 一见终局事件就关流，排在它后面的帧到不了浏览器），`bill` 带这一局每次模型调用的 token 与缓存明细；默认视图**不包含**任何人的身份与私有词，也**不包含** API Key。
 
 ## 内心独白与公开发言
 
@@ -113,9 +136,12 @@ SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vo
 
 ## 计费说明
 
-账单是**本地估算**：单价表内置在 `lib/billing/prices.ts`（单位 CNY / 1K tokens），未知模型按该供应商默认档估算，缓存命中的 token 按 prompt 单价计入、没有做缓存折扣。实际费用以供应商官方账单为准。供应商没有返回 usage 或缓存字段时，对应数值记 0 并在账单里注明。
+token 与缓存明细对所有供应商都照常统计；**金额只有智谱会给**，而且是本地估算。
 
-OpenRouter 的模型来自上游多家厂商、按美元实时计价，因此**不做费用估算**：账单照常统计 token，费用一律显示「费用暂不可用（仅统计 token）」。模型名用 OpenRouter 的 `厂商/模型` 写法（默认 `openai/gpt-4o-mini`）。
+- **智谱**：单价表内置在 `lib/billing/prices.ts`（单位 CNY / 1K tokens），未知模型按该供应商默认档估算，缓存命中的 token 按 prompt 单价计入、没有做缓存折扣。实际费用以供应商官方账单为准。
+- **DeepSeek / OpenRouter**：**只显示 token 与缓存，不显示任何金额**。DeepSeek 有阶梯价、缓存折扣与优惠时段，OpenRouter 的模型来自上游多家厂商、按美元实时计价，本地静态单价算出来的钱和官方账单对不上，与其编一个看着像真的假价，不如不给。这两家的账单估算值是 `null`，局末账单与历史记录里连「¥」都不出现：「估算」徽章、总计的费用格、按座位与每次调用的费用列一起隐藏，账单备注里写明「该供应商没有内置单价表，本局只统计 token，费用暂不可用。」
+
+供应商没有返回 usage 或缓存字段时，对应数值记 0 并在账单里注明。OpenRouter 的模型名用它的 `厂商/模型` 写法（默认 `openai/gpt-4o-mini`）。
 
 ## v1 不包含
 
