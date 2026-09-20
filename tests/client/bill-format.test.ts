@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import type { BillTotals } from '@/lib/billing/estimate';
 import type { UsageRecord } from '@/lib/billing/ledger';
 import {
   CACHE_UNKNOWN_TEXT,
   COST_UNAVAILABLE_TEXT,
   USAGE_PHASE_LABELS,
+  billShowsCost,
   formatCacheCell,
   formatCallCost,
   formatClock,
@@ -30,6 +32,20 @@ function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
     usageReported: true,
     cacheReported: true,
     ...overrides,
+  };
+}
+
+function totals(estimatedCostCny: number | null): BillTotals {
+  return {
+    calls: 2,
+    promptTokens: 2000,
+    completionTokens: 1000,
+    totalTokens: 3000,
+    cacheHitTokens: 1600,
+    cacheMissTokens: 400,
+    cacheReportedCalls: 2,
+    usageMissingCalls: 0,
+    estimatedCostCny,
   };
 }
 
@@ -98,6 +114,17 @@ describe('formatCallCost', () => {
     expect(formatCallCost(record({ provider: 'deepseek', model: 'deepseek-chat' }))).toBe(
       COST_UNAVAILABLE_TEXT,
     );
+  });
+});
+
+describe('billShowsCost', () => {
+  it('总计有金额时要展示费用列', () => {
+    expect(billShowsCost({ totals: totals(0.0075) })).toBe(true);
+    expect(billShowsCost({ totals: totals(0) })).toBe(true);
+  });
+
+  it('总计为 null 时不展示费用列', () => {
+    expect(billShowsCost({ totals: totals(null) })).toBe(false);
   });
 });
 

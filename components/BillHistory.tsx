@@ -11,7 +11,12 @@ import {
   saveHistory,
   type BillHistoryEntry,
 } from '@/lib/client/bill-history';
-import { formatCost, formatDateTime, formatTokens } from '@/lib/client/bill-format';
+import {
+  billShowsCost,
+  formatCost,
+  formatDateTime,
+  formatTokens,
+} from '@/lib/client/bill-format';
 import { browserStorage } from '@/lib/client/settings-storage';
 import { PROVIDER_LABELS } from '@/lib/llm/providers';
 import { BillPanel } from '@/components/BillPanel';
@@ -72,7 +77,7 @@ export function BillHistory({ latestBill }: BillHistoryProps) {
       {storageError ? <p className="danger">{storageError}</p> : null}
 
       {entries.length === 0 ? (
-        <p className="muted">还没有记录：打完一局后这里会出现该局的估算账单。</p>
+        <p className="muted">还没有记录：打完一局后这里会出现该局的用量账单。</p>
       ) : (
         <ul className="history-list">
           {entries.map((entry) => (
@@ -82,7 +87,9 @@ export function BillHistory({ latestBill }: BillHistoryProps) {
                 <span>{PROVIDER_LABELS[entry.bill.provider]}</span>
                 <span>{entry.bill.model}</span>
                 <span>{formatTokens(entry.bill.totals.totalTokens)} tokens</span>
-                <span className="bill-cost">{formatCost(entry.bill.totals.estimatedCostCny)}</span>
+                {billShowsCost(entry.bill) ? (
+                  <span className="bill-cost">{formatCost(entry.bill.totals.estimatedCostCny)}</span>
+                ) : null}
                 <button type="button" onClick={() => remove(entry.gameId)}>
                   删除
                 </button>
