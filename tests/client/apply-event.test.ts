@@ -174,3 +174,38 @@ describe('applyEvent 的 bill 分支', () => {
     expect(BASE.bill).toBeNull();
   });
 });
+
+describe('applyEvent 的 usage 分支', () => {
+  const usage = {
+    type: 'usage' as const,
+    callId: 'cid-9',
+    seatId: 1,
+    phase: 'speak' as const,
+    provider: 'deepseek' as const,
+    model: 'deepseek-chat',
+    promptTokens: 10,
+    completionTokens: 4,
+    cacheHitTokens: 0,
+    cacheMissTokens: 0,
+    cacheReported: false,
+  };
+
+  it('追加一条 usage 到 usageLog', () => {
+    const next = applyEvent(BASE, usage);
+    expect(next.usageLog).toEqual([usage]);
+    expect(BASE.usageLog).toEqual([]);
+  });
+
+  it('相同 callId 不双计', () => {
+    const once = applyEvent(BASE, usage);
+    const twice = applyEvent(once, usage);
+    expect(twice.usageLog).toHaveLength(1);
+    expect(twice.usageLog[0].callId).toBe('cid-9');
+  });
+
+  it('不同 callId 依次追加', () => {
+    const a = applyEvent(BASE, usage);
+    const b = applyEvent(a, { ...usage, callId: 'cid-10', seatId: 2 });
+    expect(b.usageLog.map((row) => row.callId)).toEqual(['cid-9', 'cid-10']);
+  });
+});
