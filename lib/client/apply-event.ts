@@ -54,6 +54,9 @@ export function applyEvent(view: PublicGameView, event: GameEvent): PublicGameVi
               ],
         winner: event.winner,
       };
+    case 'usage':
+      // 用量列表还没接上，先原样透传，保持 switch 对 GameEvent 穷尽。
+      return view;
     case 'bill':
       return { ...view, bill: event.bill };
     case 'error':

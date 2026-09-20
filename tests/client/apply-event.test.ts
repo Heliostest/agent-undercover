@@ -27,6 +27,7 @@ const BASE: PublicGameView = {
   winner: null,
   errorMessage: null,
   bill: null,
+  usageLog: [],
 };
 
 describe('applyEvent', () => {
