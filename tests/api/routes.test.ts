@@ -102,7 +102,7 @@ describe('POST /api/games 请求体校验', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'provider 只能是 zhipu 或 deepseek 或 openrouter',
+      error: 'provider 只能是 zhipu 或 deepseek 或 openrouter 或 omniroute',
     });
   });
 
@@ -139,6 +139,23 @@ describe('POST /api/games 请求体校验', () => {
     await POST(postRequest({ provider: 'deepseek', apiKey: 'sk-1' }));
 
     expect(vi.mocked(startGame).mock.calls[0][0]?.llmConfig?.model).toBe('deepseek-chat');
+  });
+
+  it('omniroute 允许空 apiKey 开局', async () => {
+    const response = await POST(
+      postRequest({ provider: 'omniroute', model: 'm1', apiKey: '' }),
+    );
+    expect(response.status).toBe(201);
+    expect(vi.mocked(startGame).mock.calls[0][0]?.llmConfig).toEqual({
+      provider: 'omniroute',
+      model: 'm1',
+      apiKey: '',
+    });
+  });
+
+  it('omniroute 缺 apiKey 字段也可开局', async () => {
+    const response = await POST(postRequest({ provider: 'omniroute', model: 'm1' }));
+    expect(response.status).toBe(201);
   });
 });
 
