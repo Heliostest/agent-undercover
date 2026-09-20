@@ -1,6 +1,11 @@
 import type { Bill } from '@/lib/billing/estimate';
 import { getSession } from '@/lib/game/registry';
-import { isTerminalEvent, subscribe, type GameSession } from '@/lib/game/session';
+import {
+  isTerminalEvent,
+  subscribe,
+  usageEventsBefore,
+  type GameSession,
+} from '@/lib/game/session';
 import { toPublicView } from '@/lib/game/state';
 import type { PublicGameView } from '@/lib/game/types';
 
@@ -59,6 +64,7 @@ export async function GET(
       const watermark = session.events.length;
       // 对局已经结束时账单就留在 session 上，直接取；进行中则只认水位线之前的那张。
       snapshot.bill = session.finished ? session.lastBill ?? null : billBefore(session, watermark);
+      snapshot.usageLog = usageEventsBefore(session, watermark);
       controller.enqueue(encoder.encode(frame('snapshot', snapshot)));
 
       unsubscribe = subscribe(

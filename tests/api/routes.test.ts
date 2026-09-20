@@ -188,6 +188,25 @@ describe('GET /api/games/[gameId]/events', () => {
     expect(snapshot.bill).not.toBeNull();
   });
 
+  it('重连快照带上水位线之前的 usage，且不再回放 usage 帧', async () => {
+    const session = startGame({ rng: () => 0 });
+    await session.completion;
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+
+    const snapshotLine = body.split('\n\n')[0].split('data: ')[1];
+    const snapshot = JSON.parse(snapshotLine) as { usageLog: Array<{ callId: string }> };
+    const published = session.events.filter((event) => event.type === 'usage');
+
+    // usage 同样不进 GameState：不补进快照，刷新后已花掉的 token 就查不到了。
+    expect(published.length).toBeGreaterThan(0);
+    expect(snapshot.usageLog.map((row) => row.callId)).toEqual(
+      published.map((event) => event.callId),
+    );
+    expect(body).not.toContain('event: usage\ndata: ');
+  });
+
   it('phase:result 帧排在终局 result 帧之前，顶栏不会停在投票轮', async () => {
     const session = startGame({ rng: () => 0 });
 

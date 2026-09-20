@@ -18,7 +18,7 @@ export interface GameStream {
   start: (settings: LlmSettings) => Promise<void>;
 }
 
-const EVENT_NAMES = ['phase', 'speech', 'vote', 'result', 'error', 'bill'] as const;
+const EVENT_NAMES = ['phase', 'speech', 'vote', 'result', 'error', 'bill', 'usage'] as const;
 
 export function useGameStream(): GameStream {
   const [view, setView] = useState<PublicGameView | null>(null);
