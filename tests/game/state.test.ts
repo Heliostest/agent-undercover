@@ -143,6 +143,12 @@ describe('toPublicView', () => {
     }
   });
 
+  it('公开视图带空的 usageLog，且不含身份与 Key', () => {
+    const view = toPublicView(newGame());
+    expect(view.usageLog).toEqual([]);
+    expect(JSON.stringify(view)).not.toContain('apiKey');
+  });
+
   it('序列化后不含任何私有词与 role 字段', () => {
     const serialized = JSON.stringify(toPublicView(newGame()));
     expect(serialized).not.toContain(PAIR.civilian);

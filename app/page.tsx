@@ -9,6 +9,7 @@ import { SeatCard } from '@/components/SeatCard';
 import { SettingsForm } from '@/components/SettingsForm';
 import { Timeline } from '@/components/Timeline';
 import { TopBar } from '@/components/TopBar';
+import { UsagePanel } from '@/components/UsagePanel';
 import { VoteBar } from '@/components/VoteBar';
 import {
   browserStorage,
@@ -72,6 +73,10 @@ export default function HomePage() {
       ) : (
         <p className="panel muted">填好上面的模型设置，点「开始」让四个 AI 玩家自动打一局。</p>
       )}
+
+      {view && view.usageLog.length > 0 ? (
+        <UsagePanel rows={view.usageLog} seats={view.seats} />
+      ) : null}
 
       {bill ? <BillPanel bill={bill} seats={view?.seats ?? []} /> : null}
 

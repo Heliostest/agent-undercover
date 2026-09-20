@@ -4,8 +4,9 @@ import { PROVIDER_LABELS } from '@/lib/llm/providers';
 import type { LlmProvider } from '@/lib/llm/types';
 
 export const BILL_ESTIMATE_NOTE = '本账单为本地估算，实际费用以供应商官方账单为准。';
+// 现在 DeepSeek 也走这条路，措辞不能再只描述 OpenRouter 的「上游多家厂商」。
 export const COST_UNAVAILABLE_NOTE =
-  '该供应商没有内置单价表（模型来自上游多家厂商），本局只统计 token，费用暂不可用。';
+  '该供应商没有内置单价表，本局只统计 token，费用暂不可用。';
 
 export interface SeatBill {
   seatId: number;

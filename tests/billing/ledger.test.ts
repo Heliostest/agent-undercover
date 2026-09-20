@@ -25,6 +25,7 @@ describe('UsageLedger', () => {
     const record = ledger.append(input(2, 'vote'));
 
     expect(record).toEqual({
+      callId: expect.any(String),
       at: 1_700_000_000_000,
       seatId: 2,
       phase: 'vote',
@@ -99,5 +100,27 @@ describe('UsageLedger', () => {
 
     expect(ledger.records()[0]).toMatchObject({ usageReported: false, cacheReported: false });
     expect(ledger.size).toBe(1);
+  });
+
+  it('append 为每条记录生成唯一 callId', () => {
+    let n = 0;
+    const ledger = new UsageLedger(
+      () => 0,
+      () => `call-${++n}`,
+    );
+    const a = ledger.append(input(0));
+    const b = ledger.append(input(1));
+    expect(a.callId).toBe('call-1');
+    expect(b.callId).toBe('call-2');
+    expect(ledger.records().map((r) => r.callId)).toEqual(['call-1', 'call-2']);
+  });
+
+  it('默认 idFactory 每次都不同（非空字符串）', () => {
+    const ledger = new UsageLedger(() => 0);
+    const a = ledger.append(input(0));
+    const b = ledger.append(input(1));
+    expect(a.callId.length).toBeGreaterThan(0);
+    expect(b.callId.length).toBeGreaterThan(0);
+    expect(a.callId).not.toBe(b.callId);
   });
 });

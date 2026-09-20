@@ -87,6 +87,9 @@ describe('createBillEmitter', () => {
     expect(billEvent.bill.estimated).toBe(true);
     expect(billEvent.bill.calls).toHaveLength(1);
     expect(billEvent.bill.totals.cacheHitTokens).toBe(800);
+    // DeepSeek 没有内置单价，账单只统计 token。
+    expect(billEvent.bill.totals.totalTokens).toBe(1500);
+    expect(billEvent.bill.totals.estimatedCostCny).toBeNull();
     expect(billEvent.bill.notes[0]).toBe(BILL_ESTIMATE_NOTE);
   });
 

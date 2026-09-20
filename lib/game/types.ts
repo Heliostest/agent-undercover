@@ -1,4 +1,6 @@
 import type { Bill } from '@/lib/billing/estimate';
+import type { UsagePhase } from '@/lib/billing/ledger';
+import type { LlmProvider } from '@/lib/llm/types';
 
 export type Phase = 'setup' | 'speak' | 'vote' | 'result' | 'error';
 
@@ -113,6 +115,8 @@ export interface PublicGameView {
   errorMessage: string | null;
   /** 局末账单；没结束或没收到 bill 事件时为 null。 */
   bill: Bill | null;
+  /** 中局累计的 usage 事件；快照基线为空，SSE 路由会按水位线补齐。 */
+  usageLog: UsageEvent[];
 }
 
 export interface RevealSeat {
@@ -170,6 +174,24 @@ export interface SeatAgent {
   ): Promise<VoteResult>;
 }
 
+/**
+ * 一次模型调用记入 ledger 后立刻推送的真实用量，绝不含 API Key。
+ * callId 与 UsageRecord.callId 同源，回放去重靠它。
+ */
+export interface UsageEvent {
+  type: 'usage';
+  callId: string;
+  seatId: number;
+  phase: UsagePhase;
+  provider: LlmProvider;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  cacheHitTokens: number;
+  cacheMissTokens: number;
+  cacheReported: boolean;
+}
+
 /** 广播给浏览器的事件一律是公开信息：speech / vote payload 永远不带 thought 字段。 */
 export type GameEvent =
   | { type: 'phase'; phase: Phase; round: number; activeSeatId: number | null }
@@ -192,6 +214,7 @@ export type GameEvent =
       winner: Winner | null;
       reveal: RevealSeat[] | null;
     }
+  | UsageEvent
   /** 终局事件之前发出的本局估算账单，绝不含 API Key。 */
   | { type: 'bill'; bill: Bill }
   | { type: 'error'; message: string };

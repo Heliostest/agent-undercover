@@ -54,6 +54,13 @@ export function applyEvent(view: PublicGameView, event: GameEvent): PublicGameVi
               ],
         winner: event.winner,
       };
+    case 'usage': {
+      // 断线重连会重放事件，callId 是一次调用的唯一标识，用它挡住重复计数。
+      if (view.usageLog.some((row) => row.callId === event.callId)) {
+        return view;
+      }
+      return { ...view, usageLog: [...view.usageLog, event] };
+    }
     case 'bill':
       return { ...view, bill: event.bill };
     case 'error':

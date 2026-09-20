@@ -1,4 +1,4 @@
-import { estimateCallCostCny, roundCny } from '@/lib/billing/estimate';
+import { estimateCallCostCny, roundCny, type Bill } from '@/lib/billing/estimate';
 import type { UsagePhase, UsageRecord } from '@/lib/billing/ledger';
 
 export const USAGE_PHASE_LABELS: Record<UsagePhase, string> = {
@@ -16,6 +16,11 @@ export function formatCny(value: number): string {
 /** 供应商没有内置单价时账单里的费用是 null，这里统一渲染成一句说明。 */
 export function formatCost(value: number | null): string {
   return value === null ? COST_UNAVAILABLE_TEXT : formatCny(value);
+}
+
+/** 没有内置单价的供应商整张账单都不谈钱：界面只留 token / 缓存，连「¥」都不出现。 */
+export function billShowsCost(bill: Pick<Bill, 'totals'>): boolean {
+  return bill.totals.estimatedCostCny !== null;
 }
 
 /** 自己插逗号，不依赖 Intl，保证不同 Node 构建下输出一致。 */

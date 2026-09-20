@@ -12,9 +12,10 @@ import {
   isTerminalEvent,
   publish,
   subscribe,
+  usageEventsBefore,
 } from '@/lib/game/session';
 import { createGame } from '@/lib/game/state';
-import type { GameEvent, Persona } from '@/lib/game/types';
+import type { GameEvent, Persona, UsageEvent } from '@/lib/game/types';
 
 const PERSONAS: Persona[] = [0, 1, 2, 3].map((id) => ({
   id: `persona-${id}`,
@@ -32,6 +33,22 @@ function newSession(gameId = 'g-1') {
       undercoverSeatId: 0,
     }),
   );
+}
+
+function usageEvent(callId: string): UsageEvent {
+  return {
+    type: 'usage',
+    callId,
+    seatId: 0,
+    phase: 'speak',
+    provider: 'zhipu',
+    model: 'glm-4-flash',
+    promptTokens: 100,
+    completionTokens: 20,
+    cacheHitTokens: 64,
+    cacheMissTokens: 36,
+    cacheReported: true,
+  };
 }
 
 const PHASE_EVENT: GameEvent = { type: 'phase', phase: 'speak', round: 1, activeSeatId: 0 };
@@ -139,6 +156,31 @@ describe('session 事件总线', () => {
     ).toBe(false);
     expect(isTerminalEvent(ERROR_EVENT)).toBe(true);
     expect(isTerminalEvent(PHASE_EVENT)).toBe(false);
+  });
+});
+
+describe('usageEventsBefore', () => {
+  it('只取水位线之前的 usage，保持顺序', () => {
+    const session = newSession();
+    publish(session, PHASE_EVENT);
+    publish(session, usageEvent('a'));
+    publish(session, { type: 'speech', round: 1, seatId: 0, text: '一种饮料', fallback: false });
+    publish(session, usageEvent('b'));
+
+    expect(usageEventsBefore(session, session.events.length).map((row) => row.callId)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(usageEventsBefore(session, 2).map((row) => row.callId)).toEqual(['a']);
+  });
+
+  it('水位线为 0 或越界时都不会报错', () => {
+    const session = newSession();
+    publish(session, usageEvent('a'));
+
+    expect(usageEventsBefore(session, 0)).toEqual([]);
+    expect(usageEventsBefore(session, -5)).toEqual([]);
+    expect(usageEventsBefore(session, 99).map((row) => row.callId)).toEqual(['a']);
   });
 });
 

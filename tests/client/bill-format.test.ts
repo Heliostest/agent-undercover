@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import type { BillTotals } from '@/lib/billing/estimate';
 import type { UsageRecord } from '@/lib/billing/ledger';
 import {
   CACHE_UNKNOWN_TEXT,
   COST_UNAVAILABLE_TEXT,
   USAGE_PHASE_LABELS,
+  billShowsCost,
   formatCacheCell,
   formatCallCost,
   formatClock,
@@ -16,11 +18,12 @@ import {
 
 function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
   return {
+    callId: 'c-1',
     at: 1_700_000_000_000,
     seatId: 0,
     phase: 'speak',
-    provider: 'deepseek',
-    model: 'deepseek-chat',
+    provider: 'zhipu',
+    model: 'glm-4-air',
     promptTokens: 1000,
     completionTokens: 500,
     totalTokens: 1500,
@@ -29,6 +32,20 @@ function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
     usageReported: true,
     cacheReported: true,
     ...overrides,
+  };
+}
+
+function totals(estimatedCostCny: number | null): BillTotals {
+  return {
+    calls: 2,
+    promptTokens: 2000,
+    completionTokens: 1000,
+    totalTokens: 3000,
+    cacheHitTokens: 1600,
+    cacheMissTokens: 400,
+    cacheReportedCalls: 2,
+    usageMissingCalls: 0,
+    estimatedCostCny,
   };
 }
 
@@ -86,14 +103,28 @@ describe('formatCost', () => {
 
 describe('formatCallCost', () => {
   it('按这次调用的模型单价算出金额', () => {
-    // deepseek-chat：1K prompt * 0.002 + 0.5K completion * 0.008 = 0.006
-    expect(formatCallCost(record())).toBe('¥0.0060');
+    // glm-4-air：1K prompt * 0.0005 + 0.5K completion * 0.0005 = 0.00075
+    expect(formatCallCost(record())).toBe('¥0.0008');
   });
 
   it('没有内置单价的供应商显示「费用暂不可用」', () => {
     expect(formatCallCost(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' }))).toBe(
       COST_UNAVAILABLE_TEXT,
     );
+    expect(formatCallCost(record({ provider: 'deepseek', model: 'deepseek-chat' }))).toBe(
+      COST_UNAVAILABLE_TEXT,
+    );
+  });
+});
+
+describe('billShowsCost', () => {
+  it('总计有金额时要展示费用列', () => {
+    expect(billShowsCost({ totals: totals(0.0075) })).toBe(true);
+    expect(billShowsCost({ totals: totals(0) })).toBe(true);
+  });
+
+  it('总计为 null 时不展示费用列', () => {
+    expect(billShowsCost({ totals: totals(null) })).toBe(false);
   });
 });
 

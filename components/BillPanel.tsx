@@ -3,6 +3,7 @@
 import type { Bill } from '@/lib/billing/estimate';
 import {
   USAGE_PHASE_LABELS,
+  billShowsCost,
   formatCacheCell,
   formatCallCost,
   formatClock,
@@ -21,12 +22,15 @@ export interface BillPanelProps {
 }
 
 export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProps) {
+  /** 供应商没有内置单价时整张账单不谈钱：徽章、总计费用格、费用列一起藏起来。 */
+  const showCost = billShowsCost(bill);
+
   return (
     <section className="panel bill">
       <div className="bill-header">
         <h2 className="section-title">
           {title}
-          <span className="bill-badge">估算</span>
+          {showCost ? <span className="bill-badge">估算</span> : null}
         </h2>
         <p className="muted">
           {PROVIDER_LABELS[bill.provider]} ｜ {bill.model} ｜ 共 {bill.totals.calls} 次调用
@@ -54,10 +58,12 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
               : '未提供'}
           </dd>
         </div>
-        <div>
-          <dt>估算费用</dt>
-          <dd className="bill-cost">{formatCost(bill.totals.estimatedCostCny)}</dd>
-        </div>
+        {showCost ? (
+          <div>
+            <dt>估算费用</dt>
+            <dd className="bill-cost">{formatCost(bill.totals.estimatedCostCny)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <ul className="bill-notes muted">
@@ -75,7 +81,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
             <th>提示</th>
             <th>生成</th>
             <th>缓存命中</th>
-            <th>估算费用</th>
+            {showCost ? <th>估算费用</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -88,7 +94,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
               <td>
                 {bill.totals.cacheReportedCalls > 0 ? formatTokens(seat.cacheHitTokens) : '未提供'}
               </td>
-              <td>{formatCost(seat.estimatedCostCny)}</td>
+              {showCost ? <td>{formatCost(seat.estimatedCostCny)}</td> : null}
             </tr>
           ))}
         </tbody>
@@ -106,7 +112,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
               <th>生成</th>
               <th>合计</th>
               <th>缓存</th>
-              <th>估算费用</th>
+              {showCost ? <th>估算费用</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -119,7 +125,7 @@ export function BillPanel({ bill, seats, title = '本局账单' }: BillPanelProp
                 <td>{call.usageReported ? formatTokens(call.completionTokens) : '未提供'}</td>
                 <td>{call.usageReported ? formatTokens(call.totalTokens) : '未提供'}</td>
                 <td>{formatCacheCell(call)}</td>
-                <td>{formatCallCost(call)}</td>
+                {showCost ? <td>{formatCallCost(call)}</td> : null}
               </tr>
             ))}
           </tbody>

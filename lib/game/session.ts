@@ -1,5 +1,5 @@
 import type { Bill } from '@/lib/billing/estimate';
-import type { GameEvent, GameState } from '@/lib/game/types';
+import type { GameEvent, GameState, UsageEvent } from '@/lib/game/types';
 
 export type GameEventListener = (event: GameEvent) => void;
 
@@ -105,6 +105,16 @@ export function publish(session: GameSession, event: GameEvent): void {
       }
     }
   }
+}
+
+/**
+ * usage 和账单一样不进 GameState：重连时水位线之前的那些只能从事件缓冲里捞回快照，
+ * 否则刷新后已经花掉的 token 就从用量面板上消失了。
+ */
+export function usageEventsBefore(session: GameSession, watermark: number): UsageEvent[] {
+  return session.events
+    .slice(0, Math.max(0, watermark))
+    .filter((event): event is UsageEvent => event.type === 'usage');
 }
 
 /**
