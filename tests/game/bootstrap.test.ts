@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { BILL_ESTIMATE_NOTE } from '@/lib/billing/estimate';
 import { startGame } from '@/lib/game/bootstrap';
-import { getSession } from '@/lib/game/registry';
+import { GAME_ABORTED_MESSAGE } from '@/lib/game/judge';
+import { FINISHED_SESSION_TTL_MS, getSession } from '@/lib/game/registry';
 import { buildAgentView, toPublicView } from '@/lib/game/state';
 import { InvalidLlmConfigError } from '@/lib/llm/create-client';
 import type { LlmClient } from '@/lib/llm/types';
@@ -33,6 +34,8 @@ function fakeLlm(): LlmClient {
   };
 }
 
+afterEach(() => vi.useRealTimers());
+
 describe('startGame', () => {
   it('连续开局使用共享牌袋，不重复同一词对且题材不进入玩家或公开视角', async () => {
     const games = Array.from({ length: 4 }, () => startGame({ llm: fakeLlm(), rng: () => 0 }));
@@ -61,9 +64,31 @@ describe('startGame', () => {
 
     expect(session.finished).toBe(true);
     expect(session.state.winner).not.toBeNull();
-    expect(session.events.at(-1)?.type).toBe('phase');
+    // 终局 result 必须是最后一条：SSE 一见到它就关流，后面的事件到不了浏览器。
+    expect(session.events.at(-1)?.type).toBe('result');
     expect(session.events.some((event) => event.type === 'speech')).toBe(true);
     expect(session.events.some((event) => event.type === 'vote')).toBe(true);
+  });
+
+  it('整局取消后停在 error，账单仍排在 error 之前，之后不再有事件', async () => {
+    const session = startGame({ llm: fakeLlm(), rng: () => 0 });
+    session.abortController.abort();
+    await session.completion;
+
+    expect(session.state.phase).toBe('error');
+    expect(session.state.errorMessage).toBe(GAME_ABORTED_MESSAGE);
+    expect(session.events.slice(-2).map((event) => event.type)).toEqual(['bill', 'error']);
+    expect(session.finished).toBe(true);
+  });
+
+  it('对局结束后按 TTL 从注册表里清掉，避免内存无限增长', async () => {
+    vi.useFakeTimers();
+    const session = startGame({ llm: fakeLlm(), rng: () => 0 });
+    await session.completion;
+
+    expect(getSession(session.gameId)).toBe(session);
+    vi.advanceTimersByTime(FINISHED_SESSION_TTL_MS);
+    expect(getSession(session.gameId)).toBeUndefined();
   });
 
   it('座位配置为 4 人 3 平民 1 卧底，并使用内置人设', async () => {

@@ -126,10 +126,18 @@ export interface VoteResult {
   fallback: boolean;
 }
 
-/** Judge 只依赖这个接口，测试可以塞脚本化的假 agent。 */
+/**
+ * Judge 只依赖这个接口，测试可以塞脚本化的假 agent。
+ * signal 是整局取消信号：没人在看时传下来，实现方应尽快停掉在途的模型调用。
+ */
 export interface SeatAgent {
-  speak(view: AgentView): Promise<SpeechResult>;
-  vote(view: AgentView, candidateIds: number[], rng: () => number): Promise<VoteResult>;
+  speak(view: AgentView, signal?: AbortSignal): Promise<SpeechResult>;
+  vote(
+    view: AgentView,
+    candidateIds: number[],
+    rng: () => number,
+    signal?: AbortSignal,
+  ): Promise<VoteResult>;
 }
 
 export type GameEvent =

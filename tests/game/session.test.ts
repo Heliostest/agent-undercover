@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   deleteSession,
@@ -6,7 +6,13 @@ import {
   putSession,
   sessionCount,
 } from '@/lib/game/registry';
-import { createSession, isTerminalEvent, publish, subscribe } from '@/lib/game/session';
+import {
+  SUBSCRIBER_GRACE_MS,
+  createSession,
+  isTerminalEvent,
+  publish,
+  subscribe,
+} from '@/lib/game/session';
 import { createGame } from '@/lib/game/state';
 import type { GameEvent, Persona } from '@/lib/game/types';
 
@@ -30,6 +36,16 @@ function newSession(gameId = 'g-1') {
 
 const PHASE_EVENT: GameEvent = { type: 'phase', phase: 'speak', round: 1, activeSeatId: 0 };
 const ERROR_EVENT: GameEvent = { type: 'error', message: '炸了' };
+const WIN_EVENT: GameEvent = {
+  type: 'result',
+  round: 1,
+  eliminatedSeatId: 0,
+  tieBreak: false,
+  winner: 'civilians',
+  reveal: [],
+};
+
+afterEach(() => vi.useRealTimers());
 
 describe('session 事件总线', () => {
   it('publish 会把事件写进缓冲区', () => {
@@ -123,6 +139,82 @@ describe('session 事件总线', () => {
     ).toBe(false);
     expect(isTerminalEvent(ERROR_EVENT)).toBe(true);
     expect(isTerminalEvent(PHASE_EVENT)).toBe(false);
+  });
+});
+
+describe('session 生命周期', () => {
+  it('订阅者归零且对局未结束时，宽限期到点中止整局', () => {
+    vi.useFakeTimers();
+    const session = newSession();
+    const unsubscribe = subscribe(session, () => {});
+
+    unsubscribe();
+    expect(session.abortController.signal.aborted).toBe(false);
+
+    vi.advanceTimersByTime(SUBSCRIBER_GRACE_MS);
+    expect(session.abortController.signal.aborted).toBe(true);
+  });
+
+  it('宽限期内重新连上就不再中止（刷新页面不该掐掉对局）', () => {
+    vi.useFakeTimers();
+    const session = newSession();
+    const unsubscribe = subscribe(session, () => {});
+
+    unsubscribe();
+    vi.advanceTimersByTime(SUBSCRIBER_GRACE_MS - 1);
+    subscribe(session, () => {});
+    vi.advanceTimersByTime(SUBSCRIBER_GRACE_MS * 3);
+
+    expect(session.abortController.signal.aborted).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('已经结束的对局不会因为没人订阅被中止', () => {
+    vi.useFakeTimers();
+    const session = newSession();
+    const unsubscribe = subscribe(session, () => {});
+    publish(session, WIN_EVENT);
+
+    unsubscribe();
+    vi.advanceTimersByTime(SUBSCRIBER_GRACE_MS * 3);
+
+    expect(session.abortController.signal.aborted).toBe(false);
+  });
+
+  it('监听器抛错被摘掉后同样开始计时', () => {
+    vi.useFakeTimers();
+    const session = newSession();
+    subscribe(session, () => {
+      throw new Error('连接已断');
+    });
+
+    publish(session, PHASE_EVENT);
+    vi.advanceTimersByTime(SUBSCRIBER_GRACE_MS);
+
+    expect(session.abortController.signal.aborted).toBe(true);
+  });
+
+  it('终局事件会记下 finishedAt，并把账单留在 session 上供重连取用', () => {
+    const session = newSession();
+    const bill = { gameId: session.gameId } as never;
+    publish(session, { type: 'bill', bill });
+    publish(session, WIN_EVENT);
+
+    expect(session.finished).toBe(true);
+    expect(session.finishedAt).toBeGreaterThan(0);
+    expect(session.lastBill).toBe(bill);
+  });
+
+  it('终局时通知注册方安排清理，且只通知一次', () => {
+    const session = newSession();
+    const onFinished = vi.fn();
+    session.onFinished = onFinished;
+
+    publish(session, WIN_EVENT);
+    publish(session, ERROR_EVENT);
+
+    expect(onFinished).toHaveBeenCalledTimes(1);
+    expect(onFinished).toHaveBeenCalledWith(session);
   });
 });
 

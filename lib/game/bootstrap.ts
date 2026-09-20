@@ -68,12 +68,14 @@ export function startGame(options: StartGameOptions = {}): GameSession {
     emit: (event) => publish(session, event),
   });
 
+  // 没人订阅事件流时 session 会 abort 这个信号，Judge 和在途的模型调用一起收手。
   session.completion = runGame(state, {
     agents,
     rng,
     now,
     hardTimeoutMs: options.hardTimeoutMs,
     emit,
+    signal: session.abortController.signal,
   }).then(() => undefined);
 
   return session;

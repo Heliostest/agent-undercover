@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { HARD_TIMEOUT_MESSAGE, runGame, type JudgeDeps } from '@/lib/game/judge';
+import {
+  GAME_ABORTED_MESSAGE,
+  HARD_TIMEOUT_MESSAGE,
+  runGame,
+  type JudgeDeps,
+} from '@/lib/game/judge';
 import { createGame } from '@/lib/game/state';
 import type { AgentView, GameEvent, Persona, SeatAgent } from '@/lib/game/types';
+
+type PhaseEvent = Extract<GameEvent, { type: 'phase' }>;
+
+function phaseEvents(events: GameEvent[]): PhaseEvent[] {
+  return events.filter((event): event is PhaseEvent => event.type === 'phase');
+}
 
 const PERSONAS: Persona[] = [0, 1, 2, 3].map((id) => ({
   id: `persona-${id}`,
@@ -158,6 +169,118 @@ describe('runGame', () => {
 
     const elimination = state.log.find((entry) => entry.kind === 'elimination');
     expect(elimination).toMatchObject({ kind: 'elimination', round: 1, tieBreak: true });
+  });
+
+  it('phase:result 必须排在终局 result 之前，否则 SSE 关流后前端永远停在投票轮', async () => {
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    await runGame(newGame(), deps);
+
+    const terminalIndex = events.findIndex((event) => event.type === 'result' && event.winner !== null);
+    const phaseResultIndex = events.findIndex(
+      (event) => event.type === 'phase' && event.phase === 'result',
+    );
+
+    expect(terminalIndex).toBeGreaterThan(-1);
+    expect(phaseResultIndex).toBeGreaterThan(-1);
+    expect(phaseResultIndex).toBeLessThan(terminalIndex);
+    // 终局事件之后发什么都到不了浏览器，所以它必须是整局最后一条事件。
+    expect(terminalIndex).toBe(events.length - 1);
+  });
+
+  it('本轮没分出胜负时不会提前把阶段切到 result', async () => {
+    const { deps, events } = makeDeps({ 0: [1, 2], 1: [0, 2], 2: [0, 0], 3: [1, 2] });
+    await runGame(newGame(), deps);
+
+    const firstMidResult = events.findIndex((event) => event.type === 'result' && event.winner === null);
+    expect(firstMidResult).toBeGreaterThan(-1);
+    expect(
+      events.slice(0, firstMidResult).some((event) => event.type === 'phase' && event.phase === 'result'),
+    ).toBe(false);
+  });
+
+  it('投票阶段逐个广播 activeSeatId，前端才能高亮当前投票人', async () => {
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    await runGame(newGame(), deps);
+
+    const votePhases = phaseEvents(events).filter((event) => event.phase === 'vote');
+    expect(votePhases.map((event) => event.activeSeatId)).toEqual([null, 0, 1, 2, 3, null]);
+    expect(votePhases.every((event) => event.round === 1)).toBe(true);
+  });
+
+  it('每个投票人的 phase 事件排在他自己的 vote 事件前面', async () => {
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    await runGame(newGame(), deps);
+
+    const ordered = events
+      .filter((event) => (event.type === 'phase' && event.phase === 'vote') || event.type === 'vote')
+      .map((event) => {
+        if (event.type === 'phase') {
+          return `phase:${event.activeSeatId}`;
+        }
+        return event.type === 'vote' ? `vote:${event.seatId}` : event.type;
+      });
+    expect(ordered).toEqual([
+      'phase:null',
+      'phase:0',
+      'vote:0',
+      'phase:1',
+      'vote:1',
+      'phase:2',
+      'vote:2',
+      'phase:3',
+      'vote:3',
+      'phase:null',
+    ]);
+  });
+
+  it('收到整局取消信号时停在 error，不再往下跑', async () => {
+    const controller = new AbortController();
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] }, { signal: controller.signal });
+    const speeches: number[] = [];
+    for (const [seatId, agent] of deps.agents) {
+      const speak = agent.speak.bind(agent);
+      agent.speak = async (view, signal) => {
+        speeches.push(seatId);
+        controller.abort();
+        return speak(view, signal);
+      };
+    }
+
+    const state = await runGame(newGame(), deps);
+
+    expect(speeches).toEqual([0]);
+    expect(state.phase).toBe('error');
+    expect(state.errorMessage).toBe(GAME_ABORTED_MESSAGE);
+    expect(events.at(-1)).toEqual({ type: 'error', message: GAME_ABORTED_MESSAGE });
+  });
+
+  it('开跑前信号就已取消时一步都不执行', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] }, { signal: controller.signal });
+
+    const state = await runGame(newGame(), deps);
+
+    expect(state.errorMessage).toBe(GAME_ABORTED_MESSAGE);
+    expect(state.log).toEqual([]);
+  });
+
+  it('把整局取消信号透传给 agent，模型调用能立刻停手', async () => {
+    const controller = new AbortController();
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] }, { signal: controller.signal });
+    const seen: (AbortSignal | undefined)[] = [];
+    for (const agent of deps.agents.values()) {
+      const speak = agent.speak.bind(agent);
+      agent.speak = async (view, signal) => {
+        seen.push(signal);
+        return speak(view, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((signal) => signal === controller.signal)).toBe(true);
   });
 
   it('硬超时会推 error 事件并把状态置为 error', async () => {
