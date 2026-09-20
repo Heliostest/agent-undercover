@@ -15,8 +15,8 @@ function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
     at: 1_000,
     seatId: 0,
     phase: 'speak',
-    provider: 'deepseek',
-    model: 'deepseek-chat',
+    provider: 'zhipu',
+    model: 'glm-4-air',
     promptTokens: 1000,
     completionTokens: 500,
     totalTokens: 1500,
@@ -38,12 +38,13 @@ describe('roundCny', () => {
 
 describe('estimateCallCostCny', () => {
   it('按 prompt / completion 各自的每 1K 单价计价', () => {
-    // deepseek-chat：prompt 0.002、completion 0.008 → 1*0.002 + 0.5*0.008 = 0.006
-    expect(estimateCallCostCny(record())).toBeCloseTo(0.006, 10);
+    // glm-4-air：prompt 0.0005、completion 0.0005 → 1*0.0005 + 0.5*0.0005 = 0.00075
+    expect(estimateCallCostCny(record())).toBeCloseTo(0.00075, 10);
   });
 
   it('未知模型走供应商默认档', () => {
-    expect(estimateCallCostCny(record({ model: 'deepseek-v9' }))).toBeCloseTo(0.006, 10);
+    // 智谱默认档：prompt 0.001、completion 0.001 → 1*0.001 + 0.5*0.001 = 0.0015
+    expect(estimateCallCostCny(record({ model: 'glm-未来版' }))).toBeCloseTo(0.0015, 10);
   });
 
   it('零 token 的调用费用为 0', () => {
@@ -59,21 +60,25 @@ describe('estimateCallCostCny', () => {
       estimateCallCostCny(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' })),
     ).toBeNull();
   });
+
+  it('estimateCallCostCny 对 DeepSeek 返回 null', () => {
+    expect(estimateCallCostCny(record({ provider: 'deepseek', model: 'deepseek-chat' }))).toBeNull();
+  });
 });
 
 describe('buildBill', () => {
   it('明细按时间排序，且带上局号与供应商', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 9_999,
       records: [record({ at: 300, seatId: 1 }), record({ at: 100, seatId: 0 })],
     });
 
     expect(bill.gameId).toBe('g-1');
-    expect(bill.provider).toBe('deepseek');
-    expect(bill.model).toBe('deepseek-chat');
+    expect(bill.provider).toBe('zhipu');
+    expect(bill.model).toBe('glm-4-air');
     expect(bill.finishedAt).toBe(9_999);
     expect(bill.estimated).toBe(true);
     expect(bill.calls.map((call) => call.at)).toEqual([100, 300]);
@@ -82,8 +87,8 @@ describe('buildBill', () => {
   it('totals 汇总 token、缓存与估算费用', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 0,
       records: [record({ seatId: 0 }), record({ seatId: 1 })],
     });
@@ -97,15 +102,15 @@ describe('buildBill', () => {
       cacheMissTokens: 400,
       cacheReportedCalls: 2,
       usageMissingCalls: 0,
-      estimatedCostCny: 0.012,
+      estimatedCostCny: 0.0015,
     });
   });
 
   it('bySeat 按座位号升序，每座位有自己的调用数与费用', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 0,
       records: [
         record({ seatId: 2, phase: 'vote' }),
@@ -123,15 +128,15 @@ describe('buildBill', () => {
       totalTokens: 3000,
       cacheHitTokens: 1600,
       cacheMissTokens: 400,
-      estimatedCostCny: 0.012,
+      estimatedCostCny: 0.0015,
     });
   });
 
   it('notes 第一条恒为估算提示', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 0,
       records: [record()],
     });
@@ -143,13 +148,13 @@ describe('buildBill', () => {
   it('未知模型时 notes 说明走了默认档', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-v9',
+      provider: 'zhipu',
+      model: 'glm-未来版',
       finishedAt: 0,
-      records: [record({ model: 'deepseek-v9' })],
+      records: [record({ model: 'glm-未来版' })],
     });
 
-    expect(bill.notes).toContain('模型 deepseek-v9 不在内置价目表里，已按 DeepSeek 默认档单价估算。');
+    expect(bill.notes).toContain('模型 glm-未来版 不在内置价目表里，已按 智谱 默认档单价估算。');
   });
 
   it('有调用没返回 usage 时 notes 注明次数', () => {
@@ -159,9 +164,8 @@ describe('buildBill', () => {
       model: 'glm-4-flash',
       finishedAt: 0,
       records: [
-        record({ provider: 'zhipu', model: 'glm-4-flash' }),
+        record({ model: 'glm-4-flash' }),
         record({
-          provider: 'zhipu',
           model: 'glm-4-flash',
           promptTokens: 0,
           completionTokens: 0,
@@ -186,7 +190,6 @@ describe('buildBill', () => {
       finishedAt: 0,
       records: [
         record({
-          provider: 'zhipu',
           model: 'glm-4-flash',
           cacheHitTokens: 0,
           cacheMissTokens: 0,
@@ -202,13 +205,32 @@ describe('buildBill', () => {
   it('有缓存命中时 notes 说明没有做缓存折扣', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 0,
       records: [record()],
     });
 
     expect(bill.notes).toContain('缓存命中的 token 按 prompt 单价计入，没有做缓存折扣。');
+  });
+
+  it('DeepSeek 只统计 token：费用恒为 null', () => {
+    const bill = buildBill({
+      gameId: 'g-1',
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+      finishedAt: 0,
+      records: [record({ provider: 'deepseek', model: 'deepseek-chat', seatId: 0 })],
+    });
+
+    expect(bill.totals.totalTokens).toBeGreaterThan(0);
+    expect(bill.totals.estimatedCostCny).toBeNull();
+    expect(bill.bySeat.map((seat) => seat.estimatedCostCny)).toEqual([null]);
+    expect(bill.notes).toContain(COST_UNAVAILABLE_NOTE);
+    // 这句话现在要同时服务 DeepSeek 与 OpenRouter，不能再提「上游多家厂商」。
+    expect(COST_UNAVAILABLE_NOTE).toBe('该供应商没有内置单价表，本局只统计 token，费用暂不可用。');
+    expect(bill.notes.some((note) => note.includes('默认档单价估算'))).toBe(false);
+    expect(bill.notes.some((note) => note.includes('缓存命中的 token 按 prompt 单价'))).toBe(false);
   });
 
   it('OpenRouter 只统计 token：总计与按座位的费用都是 null', () => {
@@ -271,8 +293,8 @@ describe('buildBill', () => {
   it('序列化后不含任何 Key 字段', () => {
     const bill = buildBill({
       gameId: 'g-1',
-      provider: 'deepseek',
-      model: 'deepseek-chat',
+      provider: 'zhipu',
+      model: 'glm-4-air',
       finishedAt: 0,
       records: [record()],
     });

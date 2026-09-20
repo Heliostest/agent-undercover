@@ -12,10 +12,14 @@ export interface ProviderPrices {
 }
 
 /**
- * 有内置单价的供应商。OpenRouter 的模型来自上游多家厂商、按美元实时计价，
- * 本地编不出可信的人民币单价，所以它不在这个表里，账单只统计 token。
+ * 有内置单价的供应商：只有智谱。
+ *
+ * DeepSeek 与 OpenRouter 都不在这个表里，账单只统计 token：
+ * - OpenRouter 的模型来自上游多家厂商、按美元实时计价；
+ * - DeepSeek 有阶梯价、缓存折扣与优惠时段，本地静态单价算出来的钱和官方账单对不上。
+ * 两家都宁可显示「费用暂不可用」，也不编一个看着像真的假价。
  */
-export type PricedProvider = Exclude<LlmProvider, 'openrouter'>;
+export type PricedProvider = Exclude<LlmProvider, 'deepseek' | 'openrouter'>;
 
 /**
  * 单位：CNY / 1K tokens。这是全站唯一的价目表，改价只动这里。
@@ -30,13 +34,6 @@ export const PRICE_TABLE: Record<PricedProvider, ProviderPrices> = {
       'glm-4-airx': { promptPerKTokens: 0.01, completionPerKTokens: 0.01 },
       'glm-4-long': { promptPerKTokens: 0.001, completionPerKTokens: 0.001 },
       'glm-4-plus': { promptPerKTokens: 0.05, completionPerKTokens: 0.05 },
-    },
-  },
-  deepseek: {
-    fallback: { promptPerKTokens: 0.002, completionPerKTokens: 0.008 },
-    models: {
-      'deepseek-chat': { promptPerKTokens: 0.002, completionPerKTokens: 0.008 },
-      'deepseek-reasoner': { promptPerKTokens: 0.004, completionPerKTokens: 0.016 },
     },
   },
 };

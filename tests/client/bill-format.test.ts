@@ -20,8 +20,8 @@ function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
     at: 1_700_000_000_000,
     seatId: 0,
     phase: 'speak',
-    provider: 'deepseek',
-    model: 'deepseek-chat',
+    provider: 'zhipu',
+    model: 'glm-4-air',
     promptTokens: 1000,
     completionTokens: 500,
     totalTokens: 1500,
@@ -87,12 +87,15 @@ describe('formatCost', () => {
 
 describe('formatCallCost', () => {
   it('按这次调用的模型单价算出金额', () => {
-    // deepseek-chat：1K prompt * 0.002 + 0.5K completion * 0.008 = 0.006
-    expect(formatCallCost(record())).toBe('¥0.0060');
+    // glm-4-air：1K prompt * 0.0005 + 0.5K completion * 0.0005 = 0.00075
+    expect(formatCallCost(record())).toBe('¥0.0008');
   });
 
   it('没有内置单价的供应商显示「费用暂不可用」', () => {
     expect(formatCallCost(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' }))).toBe(
+      COST_UNAVAILABLE_TEXT,
+    );
+    expect(formatCallCost(record({ provider: 'deepseek', model: 'deepseek-chat' }))).toBe(
       COST_UNAVAILABLE_TEXT,
     );
   });
