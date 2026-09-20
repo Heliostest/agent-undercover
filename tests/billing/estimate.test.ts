@@ -11,6 +11,7 @@ import {
 
 function record(overrides: Partial<UsageRecord> = {}): UsageRecord {
   return {
+    callId: 'c-1',
     at: 1_000,
     seatId: 0,
     phase: 'speak',

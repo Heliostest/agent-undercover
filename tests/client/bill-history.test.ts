@@ -18,6 +18,7 @@ import type { SettingsStorage } from '@/lib/client/settings-storage';
 
 function record(): UsageRecord {
   return {
+    callId: 'c-1',
     at: 1_000,
     seatId: 0,
     phase: 'speak',
