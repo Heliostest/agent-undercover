@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { Bill } from '@/lib/billing/estimate';
 import {
@@ -24,32 +24,38 @@ export interface BillHistoryProps {
 export function BillHistory({ latestBill }: BillHistoryProps) {
   const [entries, setEntries] = useState<BillHistoryEntry[]>([]);
   const [storageError, setStorageError] = useState<string | null>(null);
+  /** 写盘不能放进 setState 的更新函数里（更新函数必须是纯的，严格模式下会跑两遍）；
+   *  又不能只读渲染闭包里的 entries——挂载时「读历史」和「写入本局账单」是同一批 effect，
+   *  闭包里还是空数组。用一份同步更新的镜像当作最新值来源。 */
+  const entriesRef = useRef<BillHistoryEntry[]>([]);
+
+  /** 先算出下一份历史，再 setState，最后落盘。 */
+  function commit(next: BillHistoryEntry[]) {
+    entriesRef.current = next;
+    setEntries(next);
+    setStorageError(saveHistory(next, browserStorage()));
+  }
 
   useEffect(() => {
-    setEntries(loadHistory(browserStorage()));
+    const loaded = loadHistory(browserStorage());
+    entriesRef.current = loaded;
+    setEntries(loaded);
   }, []);
 
   useEffect(() => {
     if (!latestBill) {
       return;
     }
-    setEntries((previous) => {
-      const next = appendBill(previous, latestBill, Date.now());
-      setStorageError(saveHistory(next, browserStorage()));
-      return next;
-    });
+    commit(appendBill(entriesRef.current, latestBill, Date.now()));
   }, [latestBill]);
 
   function remove(gameId: string) {
-    setEntries((previous) => {
-      const next = removeBill(previous, gameId);
-      setStorageError(saveHistory(next, browserStorage()));
-      return next;
-    });
+    commit(removeBill(entriesRef.current, gameId));
   }
 
   function clearAll() {
     clearHistory(browserStorage());
+    entriesRef.current = [];
     setEntries([]);
     setStorageError(null);
   }

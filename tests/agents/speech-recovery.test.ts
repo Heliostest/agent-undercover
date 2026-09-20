@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PlayerAgent } from '@/lib/agents/player-agent';
+import { PlayerAgent, SPEECH_MAX_ATTEMPTS, SPEECH_MAX_TOKENS } from '@/lib/agents/player-agent';
 import { PERSONAS } from '@/lib/agents/personas';
 import { createDeepseekClient } from '@/lib/llm/deepseek';
 import { createZhipuClient } from '@/lib/llm/zhipu';
@@ -63,14 +63,15 @@ describe('发言恢复（真实 PlayerAgent + 供应商客户端）', () => {
       apiKey: 'test-only', model: 'glm-4-flash',
       fetchImpl: async (_url, init) => {
         budgets.push(JSON.parse(init!.body as string).max_tokens);
-        return budgets.length < 5 ? reply('{"speech":"', 'length') : reply('{"speech":"夏日水果"}');
+        return budgets.length < SPEECH_MAX_ATTEMPTS ? reply('{"speech":"', 'length') : reply('{"speech":"夏日水果"}');
       },
     });
     await expect(new PlayerAgent(PERSONAS[0], { llm, seatId: 0 }).speak(view)).resolves.toMatchObject({ fallback: false });
-    expect(budgets).toEqual([1024, 2048, 4096, 4096, 4096]);
+    expect(budgets).toEqual([1024, 2048, 4096]);
+    expect(Math.max(...budgets)).toBeLessThanOrEqual(SPEECH_MAX_TOKENS);
   });
 
-  it('持续 429 只发五次 HTTP 请求，不与客户端重试相乘；结束时先记账再报错', async () => {
+  it('持续 429 只发三次 HTTP 请求，不与客户端重试相乘；结束时先记账再报错', async () => {
     vi.useFakeTimers();
     let calls = 0;
     const llm = createDeepseekClient({
@@ -80,7 +81,7 @@ describe('发言恢复（真实 PlayerAgent + 供应商客户端）', () => {
     const session = startGame({ llm, rng: () => 0 });
     await vi.runAllTimersAsync();
     await session.completion;
-    expect(calls).toBe(5);
+    expect(calls).toBe(SPEECH_MAX_ATTEMPTS);
     expect(session.state.phase).toBe('error');
     expect(session.state.errorMessage).toContain('限流');
     expect(session.state.log).toEqual([]);

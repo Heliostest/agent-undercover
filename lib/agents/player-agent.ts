@@ -20,12 +20,20 @@ export const FALLBACK_VOTE_REASON = '（模型没有给出有效投票，已随�
 export const AGENT_MAX_ATTEMPTS = 2;
 /**
  * 发言/投票的重试次数与墙上时钟时限是两道独立的闸：
- * 时限包住整轮重试（不是每次尝试各给一份），所以 5 次尝试也不会把 90 秒乘成 450 秒。
- * 投票比发言简单、只重试 2 次，时限收到 60 秒。
+ * 时限包住整轮重试（不是每次尝试各给一份），所以重试不会把 90 秒乘成好几份。
+ * 但次数也不能随便加：单次请求最多 20 秒（见 lib/llm/openai-compatible 的 DEFAULT_TIMEOUT_MS），
+ * 再加上尝试之间的退避，3 次发言尝试最坏 3×20+0.5+1=61.5 秒，90 秒装得下；
+ * 原先的 5 次最坏要 107.5 秒，第 5 次根本轮不到发出去，用户只会看到一句笼统的超时。
+ * 投票比发言简单、只重试 2 次（最坏 40 秒），时限收到 60 秒。
  */
-export const SPEECH_MAX_ATTEMPTS = 5;
+export const SPEECH_MAX_ATTEMPTS = 3;
 export const SPEECH_TIMEOUT_MS = 90_000;
 export const VOTE_TIMEOUT_MS = 60_000;
+
+/** 第 attempt 次失败后等多久再试；上限 4 秒，免得退避本身吃掉时限。 */
+export function speechRetryDelayMs(attempt: number): number {
+  return Math.min(500 * 2 ** (attempt - 1), 4000);
+}
 export const SPEECH_INITIAL_MAX_TOKENS = 1024;
 export const SPEECH_MAX_TOKENS = 4096;
 export const DEFAULT_AGENT_TEMPERATURE = 0.4;
@@ -98,7 +106,7 @@ export class PlayerAgent implements SeatAgent {
             throw new Error(`${view.seatName}发言失败：${lastReason}，已停止本局`);
           }
           if (attempt < SPEECH_MAX_ATTEMPTS) {
-            await waitForRetry(Math.min(500 * 2 ** (attempt - 1), 4000), signal);
+            await waitForRetry(speechRetryDelayMs(attempt), signal);
           }
         }
         continue;

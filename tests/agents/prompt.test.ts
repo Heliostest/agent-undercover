@@ -129,6 +129,36 @@ describe('extractJsonObject', () => {
   it('JSON 数组不算合法对象', () => {
     expect(extractJsonObject('[1,2]')).toBeNull();
   });
+
+  it('前面的废话里有花括号时也能取到真正的 JSON', () => {
+    expect(extractJsonObject('之前有人说 { 像牛奶 } 但我选 {"speech":"白白的"}')).toEqual({
+      speech: '白白的',
+    });
+  });
+
+  it('JSON 后面又跟了一段带花括号的废话时仍取到 JSON', () => {
+    expect(extractJsonObject('{"speech":"白白的"}\n（备注 { 随便写的 }）')).toEqual({
+      speech: '白白的',
+    });
+  });
+
+  it('字符串里的花括号不影响配对', () => {
+    expect(extractJsonObject('{"speech":"他说 } 的时候我愣了下"}')).toEqual({
+      speech: '他说 } 的时候我愣了下',
+    });
+  });
+
+  it('嵌套对象完整保留', () => {
+    expect(extractJsonObject('好的 {"vote":1,"meta":{"sure":false},"reason":"太笼统"}')).toEqual({
+      vote: 1,
+      meta: { sure: false },
+      reason: '太笼统',
+    });
+  });
+
+  it('花括号没闭合时返回 null', () => {
+    expect(extractJsonObject('{"speech":"白白的"')).toBeNull();
+  });
 });
 
 describe('parseSpeechReply', () => {

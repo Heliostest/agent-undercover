@@ -48,8 +48,11 @@ export function parseUsage(raw: unknown): LlmUsage {
   const miss = toCount(source.prompt_cache_miss_tokens);
   if (hit !== null || miss !== null) {
     usage.cacheReported = true;
-    usage.cacheHitTokens = hit ?? Math.max(usage.promptTokens - (miss ?? 0), 0);
-    usage.cacheMissTokens = miss ?? Math.max(usage.promptTokens - usage.cacheHitTokens, 0);
+    // 命中数以 prompt_tokens 封顶，未命中再按剩余额度封顶：
+    // 供应商偶尔给出互相矛盾的两个数，不截断的话账单里会出现负数或多算的 token。
+    usage.cacheHitTokens = Math.min(hit ?? Math.max(usage.promptTokens - (miss ?? 0), 0), usage.promptTokens);
+    const remaining = usage.promptTokens - usage.cacheHitTokens;
+    usage.cacheMissTokens = miss === null ? remaining : Math.min(miss, remaining);
     return usage;
   }
 

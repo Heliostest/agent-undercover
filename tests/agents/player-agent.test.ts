@@ -2,10 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PERSONAS } from '@/lib/agents/personas';
 import {
+  AGENT_MAX_ATTEMPTS,
   FALLBACK_VOTE_REASON,
   PlayerAgent,
+  SPEECH_MAX_ATTEMPTS,
+  SPEECH_TIMEOUT_MS,
+  speechRetryDelayMs,
   VOTE_TIMEOUT_MS,
 } from '@/lib/agents/player-agent';
+import { DEFAULT_TIMEOUT_MS } from '@/lib/llm/openai-compatible';
 import type { UsageRecordInput } from '@/lib/billing/ledger';
 import type { AgentView } from '@/lib/game/types';
 import type { LlmClient, LlmUsage } from '@/lib/llm/types';
@@ -57,6 +62,30 @@ function scriptedLlm(
   };
 }
 
+describe('重试次数与时限的预算', () => {
+  /** 最坏情况：每次尝试都耗满单请求时限，中间还要退避。 */
+  function worstCaseMs(attempts: number, delay: (attempt: number) => number): number {
+    let total = 0;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      total += DEFAULT_TIMEOUT_MS;
+      if (attempt < attempts) {
+        total += delay(attempt);
+      }
+    }
+    return total;
+  }
+
+  it('发言的最后一次尝试要能在 90 秒内真的发出去', () => {
+    expect(worstCaseMs(SPEECH_MAX_ATTEMPTS, speechRetryDelayMs)).toBeLessThanOrEqual(
+      SPEECH_TIMEOUT_MS,
+    );
+  });
+
+  it('投票的最后一次尝试要能在 60 秒内真的发出去', () => {
+    expect(worstCaseMs(AGENT_MAX_ATTEMPTS, () => 0)).toBeLessThanOrEqual(VOTE_TIMEOUT_MS);
+  });
+});
+
 describe('PlayerAgent.speak', () => {
   it('第一次就合格时直接返回，只调用一次模型', async () => {
     const llm = scriptedLlm(['{"speech":"早上常喝的白色饮品"}']);
@@ -80,24 +109,24 @@ describe('PlayerAgent.speak', () => {
     expect(llm.complete).toHaveBeenCalledTimes(2);
   });
 
-  it('五次都不合格时明确报错，不把空发言交给后续玩家', async () => {
-    const llm = scriptedLlm(Array(5).fill('乱七八糟'));
+  it('尝试次数用尽仍不合格时明确报错，不把空发言交给后续玩家', async () => {
+    const llm = scriptedLlm(Array(SPEECH_MAX_ATTEMPTS).fill('乱七八糟'));
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
-    await expect(agent.speak(VIEW)).rejects.toThrow('5 次');
-    expect(llm.complete).toHaveBeenCalledTimes(5);
+    await expect(agent.speak(VIEW)).rejects.toThrow(`${SPEECH_MAX_ATTEMPTS} 次`);
+    expect(llm.complete).toHaveBeenCalledTimes(SPEECH_MAX_ATTEMPTS);
   });
 
   it('模型连续抛错时有限退避后报错，不泄露原始异常', async () => {
     vi.useFakeTimers();
-    const llm = scriptedLlm(Array(5).fill(new Error('secret-key 网络炸了')));
+    const llm = scriptedLlm(Array(SPEECH_MAX_ATTEMPTS).fill(new Error('secret-key 网络炸了')));
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     const result = agent.speak(VIEW).catch((error: Error) => error.message);
     await vi.runAllTimersAsync();
-    expect(await result).toContain('5 次');
+    expect(await result).toContain(`${SPEECH_MAX_ATTEMPTS} 次`);
     expect(await result).not.toContain('secret-key');
-    expect(llm.complete).toHaveBeenCalledTimes(5);
+    expect(llm.complete).toHaveBeenCalledTimes(SPEECH_MAX_ATTEMPTS);
   });
 
   it('第三次才合格也能成功，纠正反馈指出格式与泄词错误', async () => {
@@ -117,11 +146,14 @@ describe('PlayerAgent.speak', () => {
     expect(requests[2]).toContain('词面');
   });
 
-  it('第五次成功后立刻停止重试', async () => {
-    const llm = scriptedLlm([...Array(4).fill('格式错误'), '{"speech":"白色饮品"}']);
+  it('最后一次才成功也算数，成功后立刻停止重试', async () => {
+    const llm = scriptedLlm([
+      ...Array(SPEECH_MAX_ATTEMPTS - 1).fill('格式错误'),
+      '{"speech":"白色饮品"}',
+    ]);
     await expect(new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW))
       .resolves.toEqual({ text: '白色饮品', fallback: false });
-    expect(llm.complete).toHaveBeenCalledTimes(5);
+    expect(llm.complete).toHaveBeenCalledTimes(SPEECH_MAX_ATTEMPTS);
   });
 
   it('401 不重复请求，给出可操作错误且不泄露供应商原文', async () => {
@@ -342,7 +374,7 @@ describe('PlayerAgent 用量上报', () => {
 
   it('调用抛错时不上报（没拿到响应就没有 usage）', async () => {
     vi.useFakeTimers();
-    const llm = scriptedLlm(Array(5).fill(new Error('socket hang up')));
+    const llm = scriptedLlm(Array(SPEECH_MAX_ATTEMPTS).fill(new Error('socket hang up')));
     const reported: UsageRecordInput[] = [];
     const agent = new PlayerAgent(PERSONAS[2], {
       llm,
@@ -352,7 +384,7 @@ describe('PlayerAgent 用量上报', () => {
 
     const result = agent.speak(VIEW).catch((error: Error) => error.message);
     await vi.runAllTimersAsync();
-    expect(await result).toContain('5 次');
+    expect(await result).toContain(`${SPEECH_MAX_ATTEMPTS} 次`);
     expect(reported).toEqual([]);
   });
 
