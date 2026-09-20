@@ -7,7 +7,7 @@
 ## 环境要求
 
 - Node.js >= 20.9
-- 一个智谱 BigModel 或 DeepSeek 的 API Key（在页面上填，不用写进 .env）
+- 一个智谱 BigModel / DeepSeek / OpenRouter 的 API Key（在页面上填，不用写进 .env）；或本机已运行的 OmniRoute（`omniroute serve`，默认 `127.0.0.1:20128`，页面免填 Key）
 
 ## 快速开始
 
@@ -16,15 +16,17 @@ npm install
 npm run dev
 ```
 
-打开 http://localhost:3000 ，在「模型设置」里选供应商、填模型名与 API Key，然后点「开始」。Key 保存在这台浏览器的 localStorage，并随每次开局请求发给本地服务端；服务端只把它放在该局内存里，不写盘、不写日志。
+打开 http://localhost:3000 ，在「模型设置」里选供应商、填模型名与 API Key，然后点「开始」。Key 保存在这台浏览器的 localStorage，并随每次开局请求发给本地服务端；服务端只把它放在该局内存里，不写盘、不写日志。选「本地 OmniRoute」时页面免填 Key、模型从下拉选择，需本机已运行 `omniroute serve`（默认 `http://127.0.0.1:20128/v1`）。
 
 ## 环境变量
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
 | `ENABLE_GOD_VIEW` | 否 | 未设置（等价于关闭） | 设为 `true` 才开放 `GET /api/games/<gameId>/reveal`，页面上的「上帝视角」才能拿到身份与私有词 |
+| `OMNIROUTE_BASE_URL` | 否 | `http://127.0.0.1:20128/v1` | 本地 OmniRoute 的 OpenAI 兼容根路径（无尾斜杠或有均可） |
+| `OMNIROUTE_API_KEY` | 否 | 空 | 可选；非空则服务端请求 OmniRoute 时带 `Authorization: Bearer …` |
 
-API Key **不**通过环境变量配置：它只随 `POST /api/games` 的请求体进入该局 session 内存。
+除 OmniRoute 外，API Key **不**通过环境变量配置：它只随 `POST /api/games` 的请求体进入该局 session 内存。OmniRoute 的上游 Key 留在 OmniRoute 进程里，页面免填。
 
 ## 脚本
 
@@ -101,7 +103,7 @@ app/                              页面与 API routes
 components/                       纯展示组件
 lib/game/                         GameState / rules / Judge / session / registry / bootstrap
 lib/agents/                       personas / prompt / PlayerAgent
-lib/llm/                          供应商客户端（OpenAI 兼容核心 + 智谱 / DeepSeek / OpenRouter）与用量解析
+lib/llm/                          供应商客户端（OpenAI 兼容核心 + 智谱 / DeepSeek / OpenRouter / 本地 OmniRoute）与用量解析
 lib/billing/                      用量流水账、价目表、账单估算与 bill 事件发射
 lib/client/                       事件归约、格式化、SSE hook、设置与账单历史存储
 data/word-pairs.json              内置词库
@@ -139,7 +141,7 @@ SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vo
 token 与缓存明细对所有供应商都照常统计；**金额只有智谱会给**，而且是本地估算。
 
 - **智谱**：单价表内置在 `lib/billing/prices.ts`（单位 CNY / 1K tokens），未知模型按该供应商默认档估算，缓存命中的 token 按 prompt 单价计入、没有做缓存折扣。实际费用以供应商官方账单为准。
-- **DeepSeek / OpenRouter**：**只显示 token 与缓存，不显示任何金额**。DeepSeek 有阶梯价、缓存折扣与优惠时段，OpenRouter 的模型来自上游多家厂商、按美元实时计价，本地静态单价算出来的钱和官方账单对不上，与其编一个看着像真的假价，不如不给。这两家的账单估算值是 `null`，局末账单与历史记录里连「¥」都不出现：「估算」徽章、总计的费用格、按座位与每次调用的费用列一起隐藏，账单备注里写明「该供应商没有内置单价表，本局只统计 token，费用暂不可用。」
+- **DeepSeek / OpenRouter / 本地 OmniRoute**：**只显示 token 与缓存，不显示任何金额**。DeepSeek 有阶梯价、缓存折扣与优惠时段，OpenRouter 的模型来自上游多家厂商、按美元实时计价，OmniRoute 聚合本地上游、费用以各上游账单为准，本地静态单价算出来的钱对不上，与其编一个看着像真的假价，不如不给。这几家的账单估算值是 `null`，局末账单与历史记录里连「¥」都不出现：「估算」徽章、总计的费用格、按座位与每次调用的费用列一起隐藏，账单备注里写明「该供应商没有内置单价表，本局只统计 token，费用暂不可用。」
 
 供应商没有返回 usage 或缓存字段时，对应数值记 0 并在账单里注明。OpenRouter 的模型名用它的 `厂商/模型` 写法（默认 `openai/gpt-4o-mini`）。
 
