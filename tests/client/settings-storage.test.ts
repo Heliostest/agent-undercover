@@ -79,6 +79,16 @@ describe('validateSettings', () => {
     expect(validateSettings({ ...FILLED, apiKey: '   ' })).toBe('请先填写 API Key 再开局');
   });
 
+  it('omniroute 空 Key 可通过校验', () => {
+    expect(validateSettings({ provider: 'omniroute', model: 'm1', apiKey: '' })).toBeNull();
+  });
+
+  it('omniroute 仍要求非空模型', () => {
+    expect(validateSettings({ provider: 'omniroute', model: '  ', apiKey: '' })).toBe(
+      '请先填写模型名再开局',
+    );
+  });
+
   it('空模型给出可读提示', () => {
     expect(validateSettings({ ...FILLED, model: '' })).toBe('请先填写模型名再开局');
   });
@@ -86,7 +96,7 @@ describe('validateSettings', () => {
   it('非法 provider 给出可读提示', () => {
     expect(
       validateSettings({ ...FILLED, provider: 'openai' as LlmSettings['provider'] }),
-    ).toBe('请选择供应商：智谱 或 DeepSeek 或 OpenRouter');
+    ).toBe('请选择供应商：智谱 或 DeepSeek 或 OpenRouter 或 本地 OmniRoute');
   });
 });
 
@@ -105,6 +115,12 @@ describe('buildStartRequestBody', () => {
       'model',
       'provider',
     ]);
+  });
+
+  it('buildStartRequestBody 对 omniroute 强制 apiKey 为空串', () => {
+    expect(
+      buildStartRequestBody({ provider: 'omniroute', model: ' m ', apiKey: 'should-clear' }),
+    ).toEqual({ provider: 'omniroute', model: 'm', apiKey: '' });
   });
 });
 

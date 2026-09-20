@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -16,9 +17,12 @@ describe('scripts/dev-tunnel.sh', () => {
   });
 
   it('PATH 里没有 cloudflared 时以非零状态退出并给出安装提示', () => {
-    const result = spawnSync('bash', [script], {
-      env: { ...process.env, PATH: '/usr/bin:/bin', PORT: '3999' },
+    // 空 PATH + 绝对路径调 bash，避免本机 /usr/bin 里的 cloudflared 让脚本真去开 tunnel。
+    const emptyPath = mkdtempSync(path.join(tmpdir(), 'no-cloudflared-'));
+    const result = spawnSync('/bin/bash', [script], {
+      env: { ...process.env, PATH: emptyPath, PORT: '3999' },
       encoding: 'utf8',
+      timeout: 5_000,
     });
     expect(result.status).not.toBe(0);
     const err = `${result.stdout}\n${result.stderr}`;

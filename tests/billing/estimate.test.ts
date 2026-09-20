@@ -59,6 +59,7 @@ describe('estimateCallCostCny', () => {
     expect(
       estimateCallCostCny(record({ provider: 'openrouter', model: 'openai/gpt-4o-mini' })),
     ).toBeNull();
+    expect(estimateCallCostCny(record({ provider: 'omniroute', model: 'm' }))).toBeNull();
   });
 
   it('estimateCallCostCny 对 DeepSeek 返回 null', () => {
@@ -247,6 +248,19 @@ describe('buildBill', () => {
     expect(bill.totals.totalTokens).toBe(3000);
     expect(bill.totals.estimatedCostCny).toBeNull();
     expect(bill.bySeat.map((seat) => seat.estimatedCostCny)).toEqual([null, null]);
+    expect(bill.notes).toContain(COST_UNAVAILABLE_NOTE);
+  });
+
+  it('omniroute 账单金额为 null', () => {
+    const bill = buildBill({
+      gameId: 'g-1',
+      provider: 'omniroute',
+      model: 'm',
+      finishedAt: 0,
+      records: [record({ provider: 'omniroute', model: 'm', seatId: 0 })],
+    });
+    expect(bill.totals.estimatedCostCny).toBeNull();
+    expect(bill.bySeat.map((seat) => seat.estimatedCostCny)).toEqual([null]);
     expect(bill.notes).toContain(COST_UNAVAILABLE_NOTE);
   });
 

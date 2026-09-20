@@ -60,13 +60,16 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
     completeOptions?.signal?.addEventListener('abort', abort, { once: true });
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
+      const headers: Record<string, string> = {
+        ...options.extraHeaders,
+        'content-type': 'application/json',
+      };
+      if (options.apiKey.trim() !== '') {
+        headers.authorization = `Bearer ${options.apiKey}`;
+      }
       const response = await fetchImpl(`${options.baseUrl}/chat/completions`, {
         method: 'POST',
-        headers: {
-          ...options.extraHeaders,
-          'content-type': 'application/json',
-          authorization: `Bearer ${options.apiKey}`,
-        },
+        headers,
         body: JSON.stringify({
           model: options.model,
           messages,
