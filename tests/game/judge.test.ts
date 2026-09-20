@@ -22,12 +22,19 @@ const PERSONAS: Persona[] = [0, 1, 2, 3].map((id) => ({
   systemPrompt: `你是玩家${id}`,
 }));
 
+const SPEECH_THOUGHT = '私密内心独白：发言';
+const VOTE_THOUGHT = '私密内心独白：投票';
+
 /** 按脚本投票的假 agent：voteScript[callIndex] 给出这次要投谁；不在候选里就投候选第一个。 */
 function scriptedAgent(seatId: number, voteScript: number[]): SeatAgent {
   let voteCall = 0;
   return {
     async speak(view: AgentView) {
-      return { text: `我是${view.seatName}，第${view.round}轮发言`, fallback: false };
+      return {
+        text: `我是${view.seatName}，第${view.round}轮发言`,
+        thought: `${SPEECH_THOUGHT}${seatId}`,
+        fallback: false,
+      };
     },
     async vote(_view, candidateIds) {
       const wanted = voteScript[Math.min(voteCall, voteScript.length - 1)];
@@ -35,6 +42,7 @@ function scriptedAgent(seatId: number, voteScript: number[]): SeatAgent {
       return {
         targetSeatId: candidateIds.includes(wanted) ? wanted : candidateIds[0],
         reason: `座位${seatId}的理由`,
+        thought: `${VOTE_THOUGHT}${seatId}`,
         fallback: false,
       };
     },
@@ -90,6 +98,47 @@ describe('runGame', () => {
     expect(state.phase).toBe('result');
     expect(state.round).toBe(1);
     expect(state.seats[3].alive).toBe(false);
+  });
+
+  it('内心独白只进服务端日志，广播出去的事件里一个字都没有', async () => {
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const state = await runGame(newGame(), deps);
+
+    const speech = state.log.find((entry) => entry.kind === 'speech');
+    const vote = state.log.find((entry) => entry.kind === 'vote');
+    expect(speech).toMatchObject({ thought: `${SPEECH_THOUGHT}0` });
+    expect(vote).toMatchObject({ thought: `${VOTE_THOUGHT}0` });
+
+    const broadcast = JSON.stringify(events);
+    expect(broadcast).not.toContain('thought');
+    expect(broadcast).not.toContain(SPEECH_THOUGHT);
+    expect(broadcast).not.toContain(VOTE_THOUGHT);
+  });
+
+  it('后面的发言者看不到前面任何人的内心独白', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const seenViews: string[] = [];
+    for (const agent of deps.agents.values()) {
+      const speak = agent.speak.bind(agent);
+      const vote = agent.vote.bind(agent);
+      agent.speak = async (view, signal) => {
+        seenViews.push(JSON.stringify(view));
+        return speak(view, signal);
+      };
+      agent.vote = async (view, candidates, rng, signal) => {
+        seenViews.push(JSON.stringify(view));
+        return vote(view, candidates, rng, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    expect(seenViews.length).toBeGreaterThan(4);
+    for (const serialized of seenViews) {
+      expect(serialized).not.toContain('thought');
+      expect(serialized).not.toContain(SPEECH_THOUGHT);
+      expect(serialized).not.toContain(VOTE_THOUGHT);
+    }
   });
 
   it('每个存活者每轮都发一次言', async () => {

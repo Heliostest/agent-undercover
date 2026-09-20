@@ -1,6 +1,7 @@
-import type { Seat, VoteEntry, Winner } from '@/lib/game/types';
+import type { PublicVoteEntry, Seat, Winner } from '@/lib/game/types';
 
-export function tallyVotes(votes: VoteEntry[]): Record<number, number> {
+/** 只看投给了谁，公开票与服务端票都能数。 */
+export function tallyVotes(votes: PublicVoteEntry[]): Record<number, number> {
   const tally: Record<number, number> = {};
   for (const vote of votes) {
     tally[vote.targetSeatId] = (tally[vote.targetSeatId] ?? 0) + 1;

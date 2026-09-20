@@ -7,6 +7,7 @@ function nameOf(seats: PublicSeat[], seatId: number): string {
   return seats.find((seat) => seat.id === seatId)?.name ?? `座位${seatId}`;
 }
 
+/** 类型上 AgentView.log 就已经是剥过内心独白的公开日志，这里只渲染公开字段。 */
 export function renderTranscript(view: AgentView): string {
   if (view.log.length === 0) {
     return '（暂无公开记录）';
@@ -38,6 +39,14 @@ function renderRoster(view: AgentView): string {
     .map((seat) => `${seat.id}=${seat.name}${seat.alive ? '' : '（已出局）'}`)
     .join('，');
 }
+
+/**
+ * 两个字段出自同一次调用：thought 是私密的（只留在服务端日志与上帝视角），
+ * speech / reason 才会公开。说清这条区别，模型才肯把真实判断写进 thought，
+ * 而不是把它揉进公开发言里泄题。
+ */
+const THOUGHT_BRIEF =
+  '你要同时给出两样东西：thought 是你的内心独白，只留在你自己脑子里，不会给任何人看，别的玩家、公开记录和时间线都读不到它；另一部分才是你公开说出口的话，桌上所有人都会看到。';
 
 const RULES_BRIEF =
   '你正在玩「谁是卧底」。全场 4 人，其中 3 名平民拿到同一个词，1 名卧底拿到一个有关联但不同的词。没有人知道自己是不是卧底。词可能是物品、人物、行为或处境，同一句话可能说的是两回事，不要认定大家都在说同一种场景。';
@@ -72,8 +81,10 @@ export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessa
         `现在是第 ${view.round} 轮发言。到目前为止的公开记录：`,
         renderTranscript(view),
         speechStrategy(view),
+        THOUGHT_BRIEF,
+        'thought 写 1~3 句你真正的判断：你觉得自己像不像多数派、谁可疑、这轮打算藏什么。这里可以直接写出你的词，因为不会给任何人看。',
         'speech 只写 1~2 句生活里的短话，尽量 20~45 个汉字，说完就收，不必每次都反问大家。不要列清单或做总结。绝对不能写出词面本身，也不能拆字、谐音或拼音暗示；不要复述别人的原句。',
-        '只输出 JSON，格式严格为：{"speech":"你的发言"}',
+        '只输出 JSON，格式严格为：{"thought":"你的内心推理","speech":"你的发言"}',
       ].join('\n'),
     },
   ];
@@ -113,7 +124,9 @@ export function buildVoteMessages(
         '投票理由也是公开发言：一句口语就够，只挑对方真正说过的一处让你犯嘀咕的地方，不做长篇判案。绝不能报出自己的词面，也不要说你猜到的另一张词，更不能用完整定义暗示答案。',
         '你也可能拿了不同的词，别默认自己一定是平民。想想谁前后改口、谁跟着别人说、谁的生活细节不太搭；有理由地选人，不必为了与多数人一致就暴露自己的词。',
         '别照搬前面玩家的投票理由；已经有人投他不算新证据。小时候和长大后的感受不同，不等于前后矛盾；没把握就承认是在猜，别为了投票硬编破绽。',
-        '只输出 JSON，格式严格为：{"vote":0,"reason":"一句话理由"}',
+        THOUGHT_BRIEF,
+        'thought 写 1~3 句你真正的推理：谁的话和你的词对不上、你为什么选他。这里可以直接写出你的词，因为不会给任何人看；reason 是公开的，必须藏住词面。',
+        '只输出 JSON，格式严格为：{"thought":"你的内心推理","vote":0,"reason":"一句话理由"}',
       ].join('\n'),
     },
   ];
@@ -180,7 +193,19 @@ export function extractJsonObject(raw: string): Record<string, unknown> | null {
   return null;
 }
 
-export function parseSpeechReply(raw: string, forbiddenWord: string): string | null {
+/**
+ * thought 是私密字段，所以它不参与藏词校验：
+ * 模型本来就该在内心独白里直呼自己的词来推理。漏写或写成非字符串都按空处理，
+ * 不能因为少了一段内心戏就把一条合格发言判死。
+ */
+function parseThought(parsed: Record<string, unknown>): string {
+  return typeof parsed.thought === 'string' ? parsed.thought.trim() : '';
+}
+
+export function parseSpeechReply(
+  raw: string,
+  forbiddenWord: string,
+): { text: string; thought: string } | null {
   const parsed = extractJsonObject(raw);
   if (!parsed) {
     return null;
@@ -193,14 +218,14 @@ export function parseSpeechReply(raw: string, forbiddenWord: string): string | n
   if (text === '' || text.includes(forbiddenWord)) {
     return null;
   }
-  return text;
+  return { text, thought: parseThought(parsed) };
 }
 
 export function parseVoteReply(
   raw: string,
   candidateIds: number[],
   forbiddenWord?: string,
-): { targetSeatId: number; reason: string } | null {
+): { targetSeatId: number; reason: string; thought: string } | null {
   const parsed = extractJsonObject(raw);
   if (!parsed) {
     return null;
@@ -216,5 +241,5 @@ export function parseVoteReply(
   if (forbiddenWord && reason.includes(forbiddenWord)) {
     return null;
   }
-  return { targetSeatId, reason };
+  return { targetSeatId, reason, thought: parseThought(parsed) };
 }

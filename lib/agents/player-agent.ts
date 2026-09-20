@@ -74,7 +74,7 @@ export class PlayerAgent implements SeatAgent {
             ...baseMessages,
             {
               role: 'user',
-              content: `上次回答未通过校验：${correction} 请重新回答，只输出 {"speech":"你的发言"}。保持一两句生活口语，只补一点信息，不要为了通过校验罗列特征或输出分析。`,
+              content: `上次回答未通过校验：${correction} 请重新回答，只输出 {"thought":"你的内心推理","speech":"你的发言"}。thought 是私密的，可以直接写出你的词；speech 保持一两句生活口语，只补一点信息，不要为了通过校验罗列特征或输出分析。`,
             },
           ]
         : baseMessages;
@@ -111,15 +111,15 @@ export class PlayerAgent implements SeatAgent {
         }
         continue;
       }
-      const text = parseSpeechReply(raw, view.word);
-      if (text !== null) {
-        return { text, fallback: false };
+      const parsed = parseSpeechReply(raw, view.word);
+      if (parsed !== null) {
+        return { ...parsed, fallback: false };
       }
       const speech = extractJsonObject(raw)?.speech;
       const leakedWord = typeof speech === 'string' && speech.includes(view.word);
       correction = leakedWord
-        ? '发言包含了你的词面，必须改用特征、用途或场景描述，不能直接写出词面。'
-        : '必须输出包含非空 speech 字符串的合法 JSON 对象。';
+        ? '公开发言 speech 包含了你的词面，必须改用特征、用途或场景描述，不能直接写出词面；想到词面本身的部分放进私密的 thought 里。'
+        : '必须输出同时包含 thought 与非空 speech 字符串的合法 JSON 对象。';
       lastReason = leakedWord ? '发言包含词面' : '发言格式不合格';
     }
     throw new Error(`${view.seatName}尝试 ${SPEECH_MAX_ATTEMPTS} 次后仍未取得合格发言（${lastReason}），已停止本局，请检查模型设置后重新开局`);
@@ -172,12 +172,14 @@ export class PlayerAgent implements SeatAgent {
       }
       const reason = extractJsonObject(raw)?.reason;
       correction = typeof reason === 'string' && reason.includes(view.word)
-        ? '上次投票理由泄露了你的词面。理由是公开的，请藏住词面，改用一句日常口语指出对方发言让你疑惑的地方，不要报答案。重新输出合法的 vote 和 reason JSON。'
-        : `上次投票格式或座位不合法。请从 ${candidateIds.join('、')} 中选一个座位，只输出 {"vote":座位号,"reason":"一句口语理由"}，不要写出自己的词面。`;
+        ? '上次投票理由泄露了你的词面。reason 是公开的，请藏住词面，改用一句日常口语指出对方发言让你疑惑的地方，不要报答案；涉及词面的推理写进私密的 thought 里。重新输出合法的 {"thought":"你的内心推理","vote":座位号,"reason":"一句口语理由"}。'
+        : `上次投票格式或座位不合法。请从 ${candidateIds.join('、')} 中选一个座位，只输出 {"thought":"你的内心推理","vote":座位号,"reason":"一句口语理由"}，reason 里不要写出自己的词面。`;
     }
     return {
       targetSeatId: pickRandom(candidateIds, rng),
       reason: FALLBACK_VOTE_REASON,
+      // 兜底票不是模型的判断，没有真实内心活动可记，留空而不是编一段。
+      thought: '',
       fallback: true,
     };
   }

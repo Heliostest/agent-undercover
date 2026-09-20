@@ -5,16 +5,20 @@ import type { StartGameOptions } from '@/lib/game/bootstrap';
 
 // 路由的 201 分支会真的建一局；这里把 startGame 包一层，强制塞进假模型，
 // 保证测试永远不发真实外网请求，同时还能断言解析后的配置确实传到了 bootstrap。
-const { fakeLlm } = vi.hoisted(() => {
+const { fakeLlm, FAKE_THOUGHT } = vi.hoisted(() => {
+  /** 只出现在内心独白里的暗号：用它断言 thought 没有漏进任何公开通道。 */
+  const FAKE_THOUGHT = '内心暗号-CANARY';
   function fakeLlm(): LlmClient {
     return {
       provider: 'zhipu',
       model: 'glm-4-flash',
       async complete(messages) {
         const prompt = messages[messages.length - 1].content;
-        const text = prompt.includes('"speech"')
-          ? '{"speech":"一种常见的日常事物"}'
-          : `{"vote":${Number(prompt.match(/可投的座位号：(\d+)/)?.[1] ?? 0)},"reason":"先投票再说"}`;
+        const text = prompt.includes('可投的座位号')
+          ? `{"thought":"${FAKE_THOUGHT}","vote":${Number(
+              prompt.match(/可投的座位号：(\d+)/)?.[1] ?? 0,
+            )},"reason":"先投票再说"}`
+          : `{"thought":"${FAKE_THOUGHT}","speech":"一种常见的日常事物"}`;
         return {
           text,
           usage: {
@@ -30,7 +34,7 @@ const { fakeLlm } = vi.hoisted(() => {
       },
     };
   }
-  return { fakeLlm };
+  return { fakeLlm, FAKE_THOUGHT };
 });
 
 vi.mock('@/lib/game/bootstrap', async (importOriginal) => {
@@ -213,6 +217,29 @@ describe('GET /api/games/[gameId]/events', () => {
     expect(activeVoters.filter((seatId) => seatId !== null).length).toBeGreaterThan(0);
   });
 
+  it('整条事件流（含快照）里不含任何内心独白', async () => {
+    const session = startGame({ rng: () => 0 });
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+    await session.completion;
+
+    expect(body).toContain('event: speech\ndata: ');
+    expect(body).not.toContain(FAKE_THOUGHT);
+    expect(body).not.toContain('thought');
+  });
+
+  it('终局后重连的快照同样不含内心独白', async () => {
+    const session = startGame({ rng: () => 0 });
+    await session.completion;
+
+    const response = await getEvents(new Request('http://localhost/e'), params(session.gameId));
+    const body = await readStream(response);
+
+    expect(body).not.toContain(FAKE_THOUGHT);
+    expect(body).not.toContain('thought');
+  });
+
   it('bill 帧排在终局 result 帧之前，关流前一定送达', async () => {
     const session = startGame({ rng: () => 0 });
 
@@ -260,6 +287,24 @@ describe('GET /api/games/[gameId]/reveal', () => {
     expect(response.status).toBe(200);
     expect(body.reveal).toHaveLength(4);
     expect(body.reveal.filter((seat) => seat.role === 'undercover')).toHaveLength(1);
+  });
+
+  it('上帝视角的日志带上内心独白，供 GodPanel 展示', async () => {
+    vi.stubEnv('ENABLE_GOD_VIEW', 'true');
+    const session = startGame({ rng: () => 0 });
+    await session.completion;
+
+    const response = await getReveal(new Request('http://localhost/r'), params(session.gameId));
+    const body = (await response.json()) as {
+      log: Array<{ kind: string; thought?: string }>;
+    };
+
+    const speeches = body.log.filter((entry) => entry.kind === 'speech');
+    const votes = body.log.filter((entry) => entry.kind === 'vote');
+    expect(speeches.length).toBeGreaterThan(0);
+    expect(votes.length).toBeGreaterThan(0);
+    expect(speeches.every((entry) => entry.thought === FAKE_THOUGHT)).toBe(true);
+    expect(votes.every((entry) => entry.thought === FAKE_THOUGHT)).toBe(true);
   });
 
   it('启用后查不到的对局返回 404', async () => {

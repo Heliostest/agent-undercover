@@ -16,6 +16,9 @@ import type { GameState, Persona, WordPair } from '@/lib/game/types';
 
 const PAIR: WordPair = { civilian: '牛奶', undercover: '豆浆' };
 
+const SPEECH_THOUGHT = '我拿的是牛奶，先别说透';
+const VOTE_THOUGHT = '他跟我的牛奶对不上，八成是卧底';
+
 const PERSONAS: Persona[] = [0, 1, 2, 3].map((id) => ({
   id: `persona-${id}`,
   name: `玩家${id}`,
@@ -63,11 +66,42 @@ describe('createGame', () => {
   });
 });
 
+/** 往一局里塞一条带内心独白的发言和一张带内心独白的票。 */
+function withThoughts(state: GameState): GameState {
+  state.round = 1;
+  recordSpeech(state, {
+    kind: 'speech',
+    round: 1,
+    seatId: 0,
+    text: '白白的',
+    fallback: false,
+    thought: SPEECH_THOUGHT,
+  });
+  recordVote(state, {
+    kind: 'vote',
+    round: 1,
+    ballot: 1,
+    seatId: 0,
+    targetSeatId: 2,
+    reason: '他很虚',
+    fallback: false,
+    thought: VOTE_THOUGHT,
+  });
+  return state;
+}
+
 describe('突变辅助', () => {
   it('recordSpeech / recordVote 按顺序追加日志', () => {
     const state = newGame();
     state.round = 1;
-    recordSpeech(state, { kind: 'speech', round: 1, seatId: 0, text: '白白的', fallback: false });
+    recordSpeech(state, {
+      kind: 'speech',
+      round: 1,
+      seatId: 0,
+      text: '白白的',
+      fallback: false,
+      thought: '先藏一手',
+    });
     recordVote(state, {
       kind: 'vote',
       round: 1,
@@ -76,8 +110,15 @@ describe('突变辅助', () => {
       targetSeatId: 2,
       reason: '他很虚',
       fallback: false,
+      thought: '他肯定是卧底',
     });
     expect(state.log.map((entry) => entry.kind)).toEqual(['speech', 'vote']);
+  });
+
+  it('服务端日志原样留着内心独白，供上帝视角回看', () => {
+    const state = withThoughts(newGame());
+    expect(state.log[0]).toMatchObject({ kind: 'speech', thought: SPEECH_THOUGHT });
+    expect(state.log[1]).toMatchObject({ kind: 'vote', thought: VOTE_THOUGHT });
   });
 
   it('eliminate 把座位置为出局并写一条 elimination 日志', () => {
@@ -112,8 +153,46 @@ describe('toPublicView', () => {
   it('日志被完整带上', () => {
     const state = newGame();
     state.round = 1;
-    recordSpeech(state, { kind: 'speech', round: 1, seatId: 0, text: '白白的', fallback: false });
+    recordSpeech(state, {
+      kind: 'speech',
+      round: 1,
+      seatId: 0,
+      text: '白白的',
+      fallback: false,
+      thought: '',
+    });
     expect(toPublicView(state).log).toHaveLength(1);
+  });
+
+  it('公开视角把内心独白整条剥掉，只留 text / reason', () => {
+    const view = toPublicView(withThoughts(newGame()));
+
+    expect(view.log[0]).toEqual({
+      kind: 'speech',
+      round: 1,
+      seatId: 0,
+      text: '白白的',
+      fallback: false,
+    });
+    expect(view.log[1]).toEqual({
+      kind: 'vote',
+      round: 1,
+      ballot: 1,
+      seatId: 0,
+      targetSeatId: 2,
+      reason: '他很虚',
+      fallback: false,
+    });
+    const serialized = JSON.stringify(view);
+    expect(serialized).not.toContain('thought');
+    expect(serialized).not.toContain(SPEECH_THOUGHT);
+    expect(serialized).not.toContain(VOTE_THOUGHT);
+  });
+
+  it('剥离是复制而不是就地改写，服务端日志不受影响', () => {
+    const state = withThoughts(newGame());
+    toPublicView(state);
+    expect(state.log[0]).toMatchObject({ thought: SPEECH_THOUGHT });
   });
 });
 
@@ -129,6 +208,12 @@ describe('toGodView / revealOf', () => {
     expect(toGodView(state).reveal).toHaveLength(4);
     expect(toGodView(state).seats).toEqual(toPublicView(state).seats);
   });
+
+  it('上帝视角的日志保留内心独白，GodPanel 才有得展示', () => {
+    const view = toGodView(withThoughts(newGame()));
+    expect(view.log[0]).toMatchObject({ kind: 'speech', thought: SPEECH_THOUGHT });
+    expect(view.log[1]).toMatchObject({ kind: 'vote', thought: VOTE_THOUGHT });
+  });
 });
 
 describe('buildAgentView', () => {
@@ -140,6 +225,16 @@ describe('buildAgentView', () => {
     expect(view.word).toBe('豆浆');
     expect(JSON.stringify(view.seats)).not.toContain('牛奶');
     expect(view.aliveOtherIds).toEqual([0, 1, 3]);
+  });
+
+  it('给 agent 的公开记录里没有任何人的内心独白（包括他自己的）', () => {
+    const state = withThoughts(newGame(2));
+    for (const seatId of [0, 1, 2, 3]) {
+      const serialized = JSON.stringify(buildAgentView(state, seatId));
+      expect(serialized).not.toContain('thought');
+      expect(serialized).not.toContain(SPEECH_THOUGHT);
+      expect(serialized).not.toContain(VOTE_THOUGHT);
+    }
   });
 
   it('出局的人不出现在 aliveOtherIds 里', () => {

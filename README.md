@@ -88,6 +88,17 @@ tests/                            Vitest 单测
 
 SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vote`、`result`、`bill`、`error`。`snapshot` 定格当前公开视图，之后只推快照之后发生的事件（按水位线订阅），重连或刷新都不会把日志追加成两份；对局已经结束时只发一条含账单的 `snapshot` 就关流。`vote` 事件带 `ballot`（本游戏轮里的第几次投票），平票重投是第 2 次，票数统计只看最后一次。投票阶段每轮到一个人就推一条带 `activeSeatId` 的 `phase` 事件，前端据此高亮当前投票人；一轮收完票后再推一条 `activeSeatId` 为 null 的 `phase`。`phase: 'result'` 与 `bill` 都排在终局事件之前推送（SSE 一见终局事件就关流，排在它后面的帧到不了浏览器），`bill` 带这一局每次模型调用的 token 与缓存明细；默认视图**不包含**任何人的身份与私有词，也**不包含** API Key。
 
+## 内心独白与公开发言
+
+每个玩家的一次模型调用同时产出两样东西：`thought`（内心独白）与 `speech` / `reason`（公开说出口的话）。发言返回 `{"thought":"…","speech":"…"}`，投票返回 `{"thought":"…","vote":N,"reason":"…"}`。
+
+两者的去向严格分开：
+
+- **公开部分**（`speech` / `reason` 与投票对象）进公开时间线、SSE 帧和其他玩家的提示词，因此仍然禁止出现自己的词面，违反就要求模型重写。
+- **内心独白**只落在服务端的对局日志里，可以直接写出自己的词（那正是它存在的意义）。它**绝不**进入任何 agent 的提示词与公开记录（`renderTranscript` / `buildAgentView` 看不到它）、也**绝不**出现在 `snapshot` 或任何 SSE 帧里。唯一能读到它的是 `GET /api/games/<gameId>/reveal`（需 `ENABLE_GOD_VIEW=true`），页面上的「上帝视角」面板会在每条发言/投票下方显示「内心独白」。
+
+剥离的关卡在 `lib/game/state.ts` 的 `toPublicLog`：`toPublicView` 与 `buildAgentView` 都逐字段重建公开日志，`toGodView` 才用未经剥离的原始日志。类型上也分了两套，`PublicGameView.log` / `AgentView.log` 是 `PublicLogEntry[]`，压根没有 `thought` 字段。模型没给或走兜底票时，`thought` 是空字符串。
+
 ## 容错
 
 - 发言会持续尝试直到校验通过，最多请求 3 次（含首次），每次发言总等待上限 90 秒。次数按时限倒推：单次请求上限 20 秒，3 次连同 500ms、1000ms 退避最坏 61.5 秒，最后一次一定还发得出去。网络错误、超时、429 / 5xx 才退避；发言层统一管理尝试次数，不再与客户端重试叠加。

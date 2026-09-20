@@ -1,14 +1,14 @@
 'use client';
 
 import { seatName } from '@/lib/client/format';
-import type { PublicGameView, SpeechEntry } from '@/lib/game/types';
+import type { PublicGameView, PublicSpeechEntry } from '@/lib/game/types';
 
 interface TimelineProps {
   view: PublicGameView;
 }
 
 export function Timeline({ view }: TimelineProps) {
-  const speeches = view.log.filter((entry): entry is SpeechEntry => entry.kind === 'speech');
+  const speeches = view.log.filter((entry): entry is PublicSpeechEntry => entry.kind === 'speech');
 
   return (
     <section className="panel">

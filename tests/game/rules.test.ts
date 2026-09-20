@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { checkWinner, pickRandom, tallyVotes, topCandidates } from '@/lib/game/rules';
-import type { Role, Seat, VoteEntry } from '@/lib/game/types';
+import type { PublicVoteEntry, Role, Seat } from '@/lib/game/types';
 
-function vote(seatId: number, targetSeatId: number): VoteEntry {
+function vote(seatId: number, targetSeatId: number): PublicVoteEntry {
   return { kind: 'vote', round: 1, ballot: 1, seatId, targetSeatId, reason: '理由', fallback: false };
 }
 
