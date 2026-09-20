@@ -10,7 +10,7 @@ import {
   parseVoteReply,
   renderTranscript,
 } from '@/lib/agents/prompt';
-import type { AgentView } from '@/lib/game/types';
+import type { AgentView, LogEntry } from '@/lib/game/types';
 
 const VIEW: AgentView = {
   seatId: 2,
@@ -52,6 +52,39 @@ describe('renderTranscript', () => {
 
   it('没有记录时给出占位文案', () => {
     expect(renderTranscript({ ...VIEW, log: [] })).toBe('（暂无公开记录）');
+  });
+
+  it('绝不把任何人的内心独白写进给 agent 看的公开记录', () => {
+    // 服务端日志里带着内心独白，渲染给模型的抄本必须把它整条挡掉。
+    const log: LogEntry[] = [
+      {
+        kind: 'speech',
+        round: 1,
+        seatId: 0,
+        text: '白白的，早上喝',
+        fallback: false,
+        thought: '我的词是牛奶，先别说透',
+      },
+      {
+        kind: 'vote',
+        round: 1,
+        ballot: 1,
+        seatId: 0,
+        targetSeatId: 1,
+        reason: '他太笼统',
+        fallback: false,
+        thought: '我怀疑他拿的是豆浆',
+      },
+    ];
+
+    const transcript = renderTranscript({ ...VIEW, log });
+
+    expect(transcript).toBe(
+      ['第1轮 发言 阿岚：白白的，早上喝', '第1轮 投票 阿岚 → 小柯，理由：他太笼统'].join('\n'),
+    );
+    expect(transcript).not.toContain('牛奶');
+    expect(transcript).not.toContain('豆浆');
+    expect(transcript).not.toContain('thought');
   });
 
   it('平票重投的那一次单独标出来，不会被当成改票', () => {
@@ -97,8 +130,14 @@ describe('buildSpeechMessages', () => {
     expect(messages[1].content).toContain('你拿到的词是「豆浆」');
     expect(messages[1].content).toContain('第 2 轮发言');
     expect(messages[1].content).toContain('白白的，早上喝');
-    expect(messages[1].content).toContain('{"speech":"你的发言"}');
+    expect(messages[1].content).toContain('{"thought":"你的内心推理","speech":"你的发言"}');
     expect(messages[1].content).toContain('1=小柯（已出局）');
+  });
+
+  it('说明 thought 是私密的、可以提到自己的词，speech 才是公开的', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(content).toContain('thought');
+    expect(content).toContain('不会给任何人看');
   });
 });
 
@@ -106,8 +145,14 @@ describe('buildVoteMessages', () => {
   it('user 消息里只列出候选座位', () => {
     const messages = buildVoteMessages(PERSONAS[2], VIEW, [0, 3]);
     expect(messages[1].content).toContain('可投的座位号：0（阿岚）、3（沉舟）');
-    expect(messages[1].content).toContain('{"vote":0,"reason":"一句话理由"}');
+    expect(messages[1].content).toContain('{"thought":"你的内心推理","vote":0,"reason":"一句话理由"}');
     expect(messages[1].content).not.toContain('2（雷子）');
+  });
+
+  it('投票也说明 thought 私密、reason 公开', () => {
+    const content = buildVoteMessages(PERSONAS[2], VIEW, [0, 3])[1].content;
+    expect(content).toContain('thought');
+    expect(content).toContain('不会给任何人看');
   });
 });
 
@@ -162,16 +207,34 @@ describe('extractJsonObject', () => {
 });
 
 describe('parseSpeechReply', () => {
-  it('取出 speech 并去掉首尾空白', () => {
-    expect(parseSpeechReply('{"speech":"  白白的，早上喝  "}', '豆浆')).toBe('白白的，早上喝');
+  it('同时取出内心独白与发言，各自去掉首尾空白', () => {
+    expect(parseSpeechReply('{"thought":"  先藏一手  ","speech":"  白白的，早上喝  "}', '豆浆')).toEqual({
+      thought: '先藏一手',
+      text: '白白的，早上喝',
+    });
   });
 
-  it('发言里出现自己的词时判为不合格', () => {
-    expect(parseSpeechReply('{"speech":"我的词是豆浆"}', '豆浆')).toBeNull();
+  it('内心独白允许出现自己的词：那是私密推理，不会被别人看到', () => {
+    expect(parseSpeechReply('{"thought":"我拿的是豆浆，得藏住","speech":"早上常喝的白色饮品"}', '豆浆')).toEqual({
+      thought: '我拿的是豆浆，得藏住',
+      text: '早上常喝的白色饮品',
+    });
+  });
+
+  it('发言里出现自己的词时判为不合格，哪怕内心独白是干净的', () => {
+    expect(parseSpeechReply('{"thought":"随便想想","speech":"我的词是豆浆"}', '豆浆')).toBeNull();
+  });
+
+  it('模型漏写 thought 时按空字符串处理，不影响发言', () => {
+    expect(parseSpeechReply('{"speech":"白白的"}', '豆浆')).toEqual({ thought: '', text: '白白的' });
+    expect(parseSpeechReply('{"thought":123,"speech":"白白的"}', '豆浆')).toEqual({
+      thought: '',
+      text: '白白的',
+    });
   });
 
   it('speech 缺失或为空时返回 null', () => {
-    expect(parseSpeechReply('{"speech":""}', '豆浆')).toBeNull();
+    expect(parseSpeechReply('{"thought":"想好了","speech":""}', '豆浆')).toBeNull();
     expect(parseSpeechReply('{"reason":"x"}', '豆浆')).toBeNull();
     expect(parseSpeechReply('不是 JSON', '豆浆')).toBeNull();
   });
@@ -181,13 +244,23 @@ describe('parseVoteReply', () => {
   it('拒绝在投票理由里泄露自己的词，但接受生活化的不泄词理由', () => {
     expect(parseVoteReply('{"vote":3,"reason":"他说的不像豆浆"}', [0, 3], '豆浆')).toBeNull();
     expect(parseVoteReply('{"vote":3,"reason":"他刚才说的，我平时还真没遇到过"}', [0, 3], '豆浆'))
-      .toEqual({ targetSeatId: 3, reason: '他刚才说的，我平时还真没遇到过' });
+      .toEqual({ targetSeatId: 3, reason: '他刚才说的，我平时还真没遇到过', thought: '' });
+  });
+
+  it('内心独白允许出现自己的词，公开理由仍然必须藏住', () => {
+    expect(
+      parseVoteReply('{"thought":"我的豆浆跟他说的对不上","vote":3,"reason":"他说得太顺了"}', [0, 3], '豆浆'),
+    ).toEqual({ targetSeatId: 3, reason: '他说得太顺了', thought: '我的豆浆跟他说的对不上' });
+    expect(
+      parseVoteReply('{"thought":"我的豆浆跟他对不上","vote":3,"reason":"跟豆浆差太远"}', [0, 3], '豆浆'),
+    ).toBeNull();
   });
 
   it('取出合法候选与理由', () => {
-    expect(parseVoteReply('{"vote":3,"reason":"他最虚"}', [0, 3])).toEqual({
+    expect(parseVoteReply('{"thought":"他最可疑","vote":3,"reason":"他最虚"}', [0, 3])).toEqual({
       targetSeatId: 3,
       reason: '他最虚',
+      thought: '他最可疑',
     });
   });
 
@@ -195,6 +268,7 @@ describe('parseVoteReply', () => {
     expect(parseVoteReply('{"vote":"0","reason":"稳"}', [0, 3])).toEqual({
       targetSeatId: 0,
       reason: '稳',
+      thought: '',
     });
   });
 
@@ -202,6 +276,7 @@ describe('parseVoteReply', () => {
     expect(parseVoteReply('{"vote":0}', [0, 3])).toEqual({
       targetSeatId: 0,
       reason: DEFAULT_VOTE_REASON,
+      thought: '',
     });
   });
 

@@ -60,12 +60,14 @@ async function runSpeechPhase(
     ensureRunnable();
     setPhase(state, deps, 'speak', seat.id);
     const result = await requireAgent(deps, seat.id).speak(buildAgentView(state, seat.id), deps.signal);
+    // 内心独白只落进服务端日志；下面广播出去的 speech 事件逐字段拼，绝不带上它。
     recordSpeech(state, {
       kind: 'speech',
       round: state.round,
       seatId: seat.id,
       text: result.text,
       fallback: result.fallback,
+      thought: result.thought,
     });
     deps.emit({
       type: 'speech',
@@ -109,9 +111,11 @@ async function collectVotes(
       targetSeatId: result.targetSeatId,
       reason: result.reason,
       fallback: result.fallback,
+      thought: result.thought,
     };
     recordVote(state, entry);
     entries.push(entry);
+    // 同发言：事件按字段拼，entry.thought 留在服务端。
     deps.emit({
       type: 'vote',
       round: entry.round,

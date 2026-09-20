@@ -3,8 +3,10 @@ import {
   type AgentView,
   type GameState,
   type GodGameView,
+  type LogEntry,
   type Persona,
   type PublicGameView,
+  type PublicLogEntry,
   type PublicSeat,
   type RevealSeat,
   type Seat,
@@ -87,6 +89,37 @@ export function revealOf(state: GameState): RevealSeat[] {
   return state.seats.map((seat) => ({ seatId: seat.id, role: seat.role, word: seat.word }));
 }
 
+/**
+ * 内心独白的唯一出口关卡：凡是要离开服务端的日志都得先过这里。
+ * 显式挑字段而不是 delete，将来给 SpeechEntry / VoteEntry 加私有字段也不会漏出去。
+ */
+function toPublicLog(log: LogEntry[]): PublicLogEntry[] {
+  return log.map((entry) => {
+    switch (entry.kind) {
+      case 'speech':
+        return {
+          kind: 'speech',
+          round: entry.round,
+          seatId: entry.seatId,
+          text: entry.text,
+          fallback: entry.fallback,
+        };
+      case 'vote':
+        return {
+          kind: 'vote',
+          round: entry.round,
+          ballot: entry.ballot,
+          seatId: entry.seatId,
+          targetSeatId: entry.targetSeatId,
+          reason: entry.reason,
+          fallback: entry.fallback,
+        };
+      case 'elimination':
+        return { ...entry };
+    }
+  });
+}
+
 function toPublicSeats(state: GameState): PublicSeat[] {
   return state.seats.map((seat) => ({
     id: seat.id,
@@ -103,7 +136,7 @@ export function toPublicView(state: GameState): PublicGameView {
     phase: state.phase,
     activeSeatId: state.activeSeatId,
     seats: toPublicSeats(state),
-    log: [...state.log],
+    log: toPublicLog(state.log),
     winner: state.winner,
     errorMessage: state.errorMessage,
     // 账单不进 GameState，只靠 bill 事件推给浏览器。
@@ -111,8 +144,9 @@ export function toPublicView(state: GameState): PublicGameView {
   };
 }
 
+/** 上帝视角是唯一能看到内心独白的出口，所以它用的是未经剥离的原始日志。 */
 export function toGodView(state: GameState): GodGameView {
-  return { ...toPublicView(state), reveal: revealOf(state) };
+  return { ...toPublicView(state), log: [...state.log], reveal: revealOf(state) };
 }
 
 export function buildAgentView(state: GameState, seatId: number): AgentView {
@@ -123,7 +157,8 @@ export function buildAgentView(state: GameState, seatId: number): AgentView {
     word: seat.word,
     round: state.round,
     seats: toPublicSeats(state),
-    log: [...state.log],
+    // agent 只配看公开记录：连他自己上一轮的内心独白都不回灌，免得再被复述出去。
+    log: toPublicLog(state.log),
     aliveOtherIds: aliveSeats(state)
       .filter((candidate) => candidate.id !== seatId)
       .map((candidate) => candidate.id),

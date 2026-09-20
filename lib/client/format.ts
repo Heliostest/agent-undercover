@@ -1,5 +1,5 @@
 import { tallyVotes } from '@/lib/game/rules';
-import type { Phase, PublicGameView, PublicSeat, VoteEntry, Winner } from '@/lib/game/types';
+import type { Phase, PublicGameView, PublicSeat, PublicVoteEntry, Winner } from '@/lib/game/types';
 
 export const PHASE_LABELS: Record<Phase, string> = {
   setup: '准备中',
@@ -18,9 +18,9 @@ export function seatName(seats: PublicSeat[], seatId: number): string {
   return seats.find((seat) => seat.id === seatId)?.name ?? `座位${seatId}`;
 }
 
-function roundVotes(view: PublicGameView): VoteEntry[] {
+function roundVotes(view: PublicGameView): PublicVoteEntry[] {
   return view.log.filter(
-    (entry): entry is VoteEntry => entry.kind === 'vote' && entry.round === view.round,
+    (entry): entry is PublicVoteEntry => entry.kind === 'vote' && entry.round === view.round,
   );
 }
 
@@ -30,7 +30,7 @@ export function currentBallot(view: PublicGameView): number {
 }
 
 /** 只返回本轮最后一次投票：平票重投的两次票不能并在一起，否则 4 人局会显示 8 票。 */
-export function currentRoundVotes(view: PublicGameView): VoteEntry[] {
+export function currentRoundVotes(view: PublicGameView): PublicVoteEntry[] {
   const votes = roundVotes(view);
   const ballot = votes.reduce((max, entry) => Math.max(max, entry.ballot), 1);
   return votes.filter((entry) => entry.ballot === ballot);

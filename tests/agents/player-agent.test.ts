@@ -88,11 +88,24 @@ describe('重试次数与时限的预算', () => {
 
 describe('PlayerAgent.speak', () => {
   it('第一次就合格时直接返回，只调用一次模型', async () => {
-    const llm = scriptedLlm(['{"speech":"早上常喝的白色饮品"}']);
+    const llm = scriptedLlm(['{"thought":"我拿的是豆浆","speech":"早上常喝的白色饮品"}']);
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.speak(VIEW)).resolves.toEqual({
       text: '早上常喝的白色饮品',
+      thought: '我拿的是豆浆',
+      fallback: false,
+    });
+    expect(llm.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('内心独白里出现自己的词不算泄露，一次就通过', async () => {
+    const llm = scriptedLlm(['{"thought":"我拿的是豆浆，别说出来","speech":"早上常喝的白色饮品"}']);
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
+
+    await expect(agent.speak(VIEW)).resolves.toEqual({
+      text: '早上常喝的白色饮品',
+      thought: '我拿的是豆浆，别说出来',
       fallback: false,
     });
     expect(llm.complete).toHaveBeenCalledTimes(1);
@@ -104,6 +117,7 @@ describe('PlayerAgent.speak', () => {
 
     await expect(agent.speak(VIEW)).resolves.toEqual({
       text: '早上常喝的白色饮品',
+      thought: '',
       fallback: false,
     });
     expect(llm.complete).toHaveBeenCalledTimes(2);
@@ -140,10 +154,15 @@ describe('PlayerAgent.speak', () => {
       },
     };
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
-    await expect(agent.speak(VIEW)).resolves.toEqual({ text: '早餐常见的白色饮品', fallback: false });
+    await expect(agent.speak(VIEW)).resolves.toEqual({
+      text: '早餐常见的白色饮品', thought: '', fallback: false,
+    });
     expect(requests).toHaveLength(3);
     expect(requests[1]).toContain('JSON');
     expect(requests[2]).toContain('词面');
+    // 纠正提示同样要把两个字段都要回来，否则重试的回答会掉 thought。
+    expect(requests[1]).toContain('"thought"');
+    expect(requests[2]).toContain('"thought"');
   });
 
   it('最后一次才成功也算数，成功后立刻停止重试', async () => {
@@ -152,7 +171,7 @@ describe('PlayerAgent.speak', () => {
       '{"speech":"白色饮品"}',
     ]);
     await expect(new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW))
-      .resolves.toEqual({ text: '白色饮品', fallback: false });
+      .resolves.toEqual({ text: '白色饮品', thought: '', fallback: false });
     expect(llm.complete).toHaveBeenCalledTimes(SPEECH_MAX_ATTEMPTS);
   });
 
@@ -213,10 +232,11 @@ describe('PlayerAgent.vote', () => {
     };
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
-      targetSeatId: 1, reason: '他刚才那句跟我想的有点岔', fallback: false,
+      targetSeatId: 1, reason: '他刚才那句跟我想的有点岔', thought: '', fallback: false,
     });
     expect(requests).toHaveLength(2);
     expect(requests[1]).toContain('词面');
+    expect(requests[1]).toContain('"thought"');
   });
 
   it('投票重写后仍然泄词时不公开原话', async () => {
@@ -228,12 +248,13 @@ describe('PlayerAgent.vote', () => {
   });
 
   it('合法投票直接返回', async () => {
-    const llm = scriptedLlm(['{"vote":1,"reason":"描述太笼统"}']);
+    const llm = scriptedLlm(['{"thought":"他跟我的词对不上","vote":1,"reason":"描述太笼统"}']);
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
       targetSeatId: 1,
       reason: '描述太笼统',
+      thought: '他跟我的词对不上',
       fallback: false,
     });
     expect(llm.complete).toHaveBeenCalledTimes(1);
@@ -246,6 +267,7 @@ describe('PlayerAgent.vote', () => {
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
       targetSeatId: 3,
       reason: '他太安静',
+      thought: '',
       fallback: false,
     });
     expect(llm.complete).toHaveBeenCalledTimes(2);
@@ -258,6 +280,8 @@ describe('PlayerAgent.vote', () => {
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0.99)).resolves.toEqual({
       targetSeatId: 3,
       reason: FALLBACK_VOTE_REASON,
+      // 兜底票没有真实的内心活动可展示，留空字符串而不是编一段。
+      thought: '',
       fallback: true,
     });
   });
@@ -394,6 +418,7 @@ describe('PlayerAgent 用量上报', () => {
 
     await expect(agent.speak(VIEW)).resolves.toEqual({
       text: '早上常喝的白色饮品',
+      thought: '',
       fallback: false,
     });
   });

@@ -52,7 +52,7 @@ describe('发言恢复（真实 PlayerAgent + 供应商客户端）', () => {
       },
     });
     const result = await new PlayerAgent(PERSONAS[0], { llm, seatId: 0, onUsage: (u) => usage.push(u) }).speak(view);
-    expect(result).toEqual({ text: '夏天冰镇后特别解暑', fallback: false });
+    expect(result).toEqual({ text: '夏天冰镇后特别解暑', thought: '', fallback: false });
     expect(budgets).toEqual([1024, 2048]);
     expect(usage.map((u) => u.usage.completionTokens)).toEqual([1024, 30]);
   });
@@ -127,7 +127,7 @@ describe('发言恢复（真实 PlayerAgent + 供应商客户端）', () => {
     });
     const result = new PlayerAgent(PERSONAS[0], { llm, seatId: 0 }).speak(view);
     await vi.runAllTimersAsync();
-    expect(await result).toEqual({ text: '夏日水果', fallback: false });
+    expect(await result).toEqual({ text: '夏日水果', thought: '', fallback: false });
     expect(times.map((t) => t - times[0])).toEqual([0, 500, 1500]);
     expect(vi.getTimerCount()).toBe(0);
   });
