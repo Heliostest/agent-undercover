@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Bill } from '@/lib/billing/estimate';
-import { DEFAULT_STRATEGY, type ThinkingStrategy } from '@/lib/agents/strategy';
 import { applyEvent } from '@/lib/client/apply-event';
 import { buildStartRequestBody, validateSettings, type LlmSettings } from '@/lib/client/settings-storage';
 import type { GameEvent, PublicGameView } from '@/lib/game/types';
@@ -16,7 +15,7 @@ export interface GameStream {
   errorMessage: string | null;
   /** 局末账单；开新局时清空。 */
   bill: Bill | null;
-  start: (settings: LlmSettings, strategy?: ThinkingStrategy) => Promise<void>;
+  start: (settings: LlmSettings) => Promise<void>;
 }
 
 const EVENT_NAMES = ['phase', 'speech', 'vote', 'result', 'error', 'bill'] as const;
@@ -34,7 +33,7 @@ export function useGameStream(): GameStream {
     };
   }, []);
 
-  const start = useCallback(async (settings: LlmSettings, strategy: ThinkingStrategy = DEFAULT_STRATEGY) => {
+  const start = useCallback(async (settings: LlmSettings) => {
     sourceRef.current?.close();
     sourceRef.current = null;
     setView(null);
@@ -56,7 +55,7 @@ export function useGameStream(): GameStream {
       response = await fetch('/api/games', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...buildStartRequestBody(settings), strategy }),
+        body: JSON.stringify(buildStartRequestBody(settings)),
       });
     } catch {
       setErrorMessage('无法连接服务端，请确认 npm run dev 正在运行');

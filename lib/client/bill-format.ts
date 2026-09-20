@@ -2,7 +2,6 @@ import { estimateCallCostCny, roundCny } from '@/lib/billing/estimate';
 import type { UsagePhase, UsageRecord } from '@/lib/billing/ledger';
 
 export const USAGE_PHASE_LABELS: Record<UsagePhase, string> = {
-  think: '思考',
   speak: '发言',
   vote: '投票',
 };
