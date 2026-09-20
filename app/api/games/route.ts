@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 
 import { startGame } from '@/lib/game/bootstrap';
-import { isThinkingStrategy } from '@/lib/agents/strategy';
 import { InvalidLlmConfigError, parseLlmConfig } from '@/lib/llm/create-client';
 
 export const runtime = 'nodejs';
@@ -18,11 +17,7 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const llmConfig = parseLlmConfig(body);
-    const strategy = (body as Record<string, unknown>).strategy;
-    if (strategy !== undefined && !isThinkingStrategy(strategy)) {
-      return NextResponse.json({ error: '未知思考方式' }, { status: 400 });
-    }
-    const session = startGame({ llmConfig, ...(strategy === undefined ? {} : { strategy }) });
+    const session = startGame({ llmConfig });
     return NextResponse.json({ gameId: session.gameId }, { status: 201 });
   } catch (error) {
     if (error instanceof InvalidLlmConfigError) {

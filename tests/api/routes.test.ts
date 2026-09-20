@@ -83,11 +83,6 @@ afterEach(() => {
 });
 
 describe('POST /api/games 请求体校验', () => {
-  it('rejects unknown thinking strategies before starting a game', async () => {
-    const response = await POST(postRequest({ provider: 'deepseek', apiKey: 'k', strategy: 'unknown' }));
-    expect(response.status).toBe(400);
-    expect(startGame).not.toHaveBeenCalled();
-  });
   it('缺 apiKey 时返回 400 和可读错误', async () => {
     const response = await POST(postRequest({ provider: 'zhipu', model: 'glm-4-flash' }));
 
