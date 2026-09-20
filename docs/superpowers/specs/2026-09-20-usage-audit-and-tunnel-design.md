@@ -24,7 +24,7 @@
 
 ## 3. 架构（方案 A）
 
-沿用现有 `UsageLedger` + SSE + 局末 `bill`，增量：
+沿用现有 `lib/billing` 的 `UsageLedger` + SSE + 局末 `bill`，增量：
 
 | 模块 | 职责 |
 |------|------|
@@ -44,9 +44,9 @@
 ```ts
 {
   type: 'usage',
-  callId: string,          // 与 ledger 条目一致，可回放去重
+  callId: string,          // append 时生成；写入 ledger 并用于回放去重
   seatId: number,
-  purpose: 'speak' | 'vote',
+  phase: 'speak' | 'vote',
   provider: 'zhipu' | 'deepseek' | 'openrouter',
   model: string,
   promptTokens: number,
@@ -62,7 +62,7 @@
 - `calls[]` + totals（含 cache 合计）保留。
 - `estimatedCostCny`：
   - `zhipu`：按现有单价表估算（可非 null）
-  - `deepseek` / `openrouter`：**恒为 `null`**（DeepSeek 本迭代起明确「不显示金额」，不再用内置表估 CNY）
+  - `deepseek` / `openrouter`：**恒为 `null`**（现状 DeepSeek 仍在 `prices.ts` 有单价；本迭代起从定价表/估价路径拿掉，与 OpenRouter 一样只记 token）
 - 文案：有金额时标注「估算」；无金额时只展示 token / cache。
 
 ### 4.3 重连
@@ -73,7 +73,7 @@
 
 ### 5.1 UsagePanel
 
-- 对局旁侧或消耗区：每条 `usage` 追加一行（座位 · speak/vote · prompt/completion · cache hit/miss；未报告 cache 时显示「未提供」）。
+- 对局旁侧或消耗区：每条 `usage` 追加一行（座位 · speak/vote（字段名 `phase`） · prompt/completion · cache hit/miss；未报告 cache 时显示「未提供」）。
 - 局末与 BillPanel 同属「消耗」区，避免两套数字；实时列表可保留作明细，Bill 作汇总。
 
 ### 5.2 BillPanel / BillHistory
