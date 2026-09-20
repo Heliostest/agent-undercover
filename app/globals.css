@@ -300,6 +300,15 @@ button.primary {
   font-size: 13px;
 }
 
+/* 中局实时用量：窄屏也能横向滑动看完五列。 */
+.usage {
+  overflow-x: auto;
+}
+
+.usage-table {
+  margin-top: 10px;
+}
+
 .history-list {
   list-style: none;
   margin: 0;
