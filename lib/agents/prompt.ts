@@ -16,11 +16,14 @@ export function renderTranscript(view: AgentView): string {
       switch (entry.kind) {
         case 'speech':
           return `第${entry.round}轮 发言 ${nameOf(view.seats, entry.seatId)}：${entry.text}`;
-        case 'vote':
-          return `第${entry.round}轮 投票 ${nameOf(view.seats, entry.seatId)} → ${nameOf(
+        case 'vote': {
+          // 平票重投是同一轮里的第二次投票，标出来模型才不会把它当成有人改票。
+          const label = entry.ballot > 1 ? `第${entry.round}轮第${entry.ballot}次投票` : `第${entry.round}轮 投票`;
+          return `${label} ${nameOf(view.seats, entry.seatId)} → ${nameOf(
             view.seats,
             entry.targetSeatId,
           )}，理由：${entry.reason}`;
+        }
         case 'elimination':
           return `第${entry.round}轮 出局：${nameOf(view.seats, entry.seatId)}${
             entry.tieBreak ? '（平票随机）' : ''
@@ -76,11 +79,21 @@ export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessa
   ];
 }
 
+/** 本轮已经投过几次，这次就是第几+1 次；视图里的日志只含已完成的那几次投票。 */
+function ballotOf(view: AgentView): number {
+  return view.log.reduce(
+    (next, entry) =>
+      entry.kind === 'vote' && entry.round === view.round ? Math.max(next, entry.ballot + 1) : next,
+    1,
+  );
+}
+
 export function buildVoteMessages(
   persona: Persona,
   view: AgentView,
   candidateIds: number[],
 ): LlmMessage[] {
+  const ballot = ballotOf(view);
   const candidates = candidateIds
     .map((seatId) => `${seatId}（${nameOf(view.seats, seatId)}）`)
     .join('、');
@@ -92,7 +105,9 @@ export function buildVoteMessages(
         RULES_BRIEF,
         `你是 ${view.seatName}（座位 ${view.seatId}）。你拿到的词是「${view.word}」。`,
         `座位表：${renderRoster(view)}`,
-        `现在是第 ${view.round} 轮投票。到目前为止的公开记录：`,
+        ballot > 1
+          ? `现在是第 ${view.round} 轮第 ${ballot} 次投票：上一次投票平票，需要在并列的人里重投一次。到目前为止的公开记录：`
+          : `现在是第 ${view.round} 轮投票。到目前为止的公开记录：`,
         renderTranscript(view),
         `可投的座位号：${candidates}。你必须从中选一个，不能弃票，不能投自己。`,
         '投票理由也是公开发言：一句口语就够，只挑对方真正说过的一处让你犯嘀咕的地方，不做长篇判案。绝不能报出自己的词面，也不要说你猜到的另一张词，更不能用完整定义暗示答案。',

@@ -92,7 +92,7 @@ docs/superpowers/specs/           设计文档
 tests/                            Vitest 单测
 ```
 
-SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vote`、`result`、`bill`、`error`。`bill` 排在终局事件之前推送，带这一局每次模型调用的 token 与缓存明细；默认视图**不包含**任何人的身份与私有词，也**不包含** API Key。
+SSE 事件：`snapshot`（连接时的公开快照）、`phase`、`speech`、`vote`、`result`、`bill`、`error`。`snapshot` 定格当前公开视图，之后只推快照之后发生的事件（按水位线订阅），重连或刷新都不会把日志追加成两份；对局已经结束时只发一条含账单的 `snapshot` 就关流。`vote` 事件带 `ballot`（本游戏轮里的第几次投票），平票重投是第 2 次，票数统计只看最后一次。`bill` 排在终局事件之前推送，带这一局每次模型调用的 token 与缓存明细；默认视图**不包含**任何人的身份与私有词，也**不包含** API Key。
 
 ## 容错
 

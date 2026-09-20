@@ -50,6 +50,28 @@ describe('session 事件总线', () => {
     expect(received).toEqual([PHASE_EVENT, ERROR_EVENT]);
   });
 
+  it('带水位线订阅时只回放水位线之后的事件', () => {
+    const session = newSession();
+    publish(session, PHASE_EVENT);
+    const watermark = session.events.length;
+
+    const received: GameEvent[] = [];
+    subscribe(session, (event) => received.push(event), watermark);
+    expect(received).toEqual([]);
+
+    publish(session, ERROR_EVENT);
+    expect(received).toEqual([ERROR_EVENT]);
+  });
+
+  it('水位线越界时不会回放也不会报错', () => {
+    const session = newSession();
+    publish(session, PHASE_EVENT);
+
+    const received: GameEvent[] = [];
+    subscribe(session, (event) => received.push(event), 99);
+    expect(received).toEqual([]);
+  });
+
   it('退订后不再收到事件', () => {
     const session = newSession();
     const received: GameEvent[] = [];

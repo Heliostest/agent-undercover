@@ -46,6 +46,8 @@ export interface SpeechEntry {
 export interface VoteEntry {
   kind: 'vote';
   round: number;
+  /** 本轮里的第几次投票，从 1 开始；平票重投会得到 2，不能和第 1 次混在一起算。 */
+  ballot: number;
   seatId: number;
   targetSeatId: number;
   reason: string;
@@ -136,6 +138,8 @@ export type GameEvent =
   | {
       type: 'vote';
       round: number;
+      /** 与 VoteEntry.ballot 同义：本轮里的第几次投票。 */
+      ballot: number;
       seatId: number;
       targetSeatId: number;
       reason: string;

@@ -1,12 +1,25 @@
+import type { Bill } from '@/lib/billing/estimate';
 import { getSession } from '@/lib/game/registry';
-import { isTerminalEvent, subscribe } from '@/lib/game/session';
+import { isTerminalEvent, subscribe, type GameSession } from '@/lib/game/session';
 import { toPublicView } from '@/lib/game/state';
+import type { PublicGameView } from '@/lib/game/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function frame(name: string, data: unknown): string {
   return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+/** 账单不进 GameState，重连时只能从已发生的事件里捞回来，否则刷新后账单会丢。 */
+function billBefore(session: GameSession, watermark: number): Bill | null {
+  for (let index = watermark - 1; index >= 0; index -= 1) {
+    const event = session.events[index];
+    if (event.type === 'bill') {
+      return event.bill;
+    }
+  }
+  return null;
 }
 
 export async function GET(
@@ -41,21 +54,29 @@ export async function GET(
         }
       };
 
-      controller.enqueue(encoder.encode(frame('snapshot', toPublicView(session.state))));
+      // 先定格快照，再用当前事件数当水位线：快照里已经有的日志不再回放，重连才不会把日志刷成两份。
+      const snapshot: PublicGameView = toPublicView(session.state);
+      const watermark = session.events.length;
+      snapshot.bill = billBefore(session, watermark);
+      controller.enqueue(encoder.encode(frame('snapshot', snapshot)));
 
-      unsubscribe = subscribe(session, (event) => {
-        if (closed) {
-          return;
-        }
-        controller.enqueue(encoder.encode(frame(event.type, event)));
-        if (isTerminalEvent(event)) {
-          close();
-        }
-      });
+      unsubscribe = subscribe(
+        session,
+        (event) => {
+          if (closed) {
+            return;
+          }
+          controller.enqueue(encoder.encode(frame(event.type, event)));
+          if (isTerminalEvent(event)) {
+            close();
+          }
+        },
+        watermark,
+      );
 
-      // 回放时就已经读到终局事件的话，上面的 close() 还拿不到 unsubscribe，这里补一次。
-      if (closed) {
-        unsubscribe();
+      // 快照已经是终局：后面不会再有事件了，直接关流，别让浏览器挂着一条空连接。
+      if (session.finished) {
+        close();
       }
 
       request.signal.addEventListener('abort', close);

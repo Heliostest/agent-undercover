@@ -1,6 +1,6 @@
 'use client';
 
-import { currentRoundVotes, seatName, voteTally } from '@/lib/client/format';
+import { currentBallot, currentRoundVotes, seatName, voteTally } from '@/lib/client/format';
 import type { PublicGameView } from '@/lib/game/types';
 
 interface VoteBarProps {
@@ -10,11 +10,14 @@ interface VoteBarProps {
 export function VoteBar({ view }: VoteBarProps) {
   const votes = currentRoundVotes(view);
   const tally = voteTally(view);
+  const ballot = currentBallot(view);
   const tallyEntries = Object.entries(tally).sort((a, b) => Number(b[1]) - Number(a[1]));
 
   return (
     <section className="panel">
-      <h2 className="section-title">第 {view.round} 轮投票</h2>
+      <h2 className="section-title">
+        第 {view.round} 轮投票{ballot > 1 ? `（平票重投第 ${ballot} 次）` : ''}
+      </h2>
       {votes.length === 0 ? (
         <p className="muted">本轮还没有人投票。</p>
       ) : (

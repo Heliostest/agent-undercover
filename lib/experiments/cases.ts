@@ -54,7 +54,7 @@ export function caseView(c: ThinkingCase, stage: number, ownActions: LogEntry[],
   if (!sparse && c.thirdInitial) log.push(speech(1, others[2], c.thirdInitial));
   if (stage > 0) {
     log.push(...ownActions.filter((e) => e.round === 1));
-    log.push({ kind: 'vote', round: 1, seatId: others[2], targetSeatId: c.seatId, reason: '先猜你吧，我还没听太明白。', fallback: false });
+    log.push({ kind: 'vote', round: 1, ballot: 1, seatId: others[2], targetSeatId: c.seatId, reason: '先猜你吧，我还没听太明白。', fallback: false });
     log.push(...c.later.map((text, i) => speech(2, others[i], text)));
     if (!sparse && c.thirdLater) log.push(speech(2, others[2], c.thirdLater));
     log.push(...ownActions.filter((e) => e.round === 2));
