@@ -7,29 +7,76 @@ import {
   createLlmClient,
   parseLlmConfig,
 } from '@/lib/llm/create-client';
+import { createOpenAiCompatibleClient } from '@/lib/llm/openai-compatible';
 import { DEFAULT_MODELS, PROVIDERS, PROVIDER_LABELS, isLlmProvider } from '@/lib/llm/providers';
+
+function okFetch() {
+  return vi.fn(
+    async () =>
+      new Response(JSON.stringify({ choices: [{ message: { content: '嗨' } }] }), { status: 200 }),
+  );
+}
 
 describe('providers 常量', () => {
   it('供应商顺序固定，标签与默认模型齐全', () => {
-    expect(PROVIDERS).toEqual(['zhipu', 'deepseek', 'openrouter']);
+    expect(PROVIDERS).toEqual(['zhipu', 'deepseek', 'openrouter', 'omniroute']);
     expect(PROVIDER_LABELS).toEqual({
       zhipu: '智谱',
       deepseek: 'DeepSeek',
       openrouter: 'OpenRouter',
+      omniroute: '本地 OmniRoute',
     });
     expect(DEFAULT_MODELS).toEqual({
       zhipu: 'glm-4-flash',
       deepseek: 'deepseek-chat',
       openrouter: 'openai/gpt-4o-mini',
+      omniroute: 'omniroute-default',
     });
   });
 
-  it('isLlmProvider 只认这三个字符串', () => {
+  it('isLlmProvider 只认这四个字符串', () => {
     expect(isLlmProvider('zhipu')).toBe(true);
     expect(isLlmProvider('deepseek')).toBe(true);
     expect(isLlmProvider('openrouter')).toBe(true);
+    expect(isLlmProvider('omniroute')).toBe(true);
     expect(isLlmProvider('openai')).toBe(false);
     expect(isLlmProvider(undefined)).toBe(false);
+  });
+});
+
+describe('createOpenAiCompatibleClient 的认证头', () => {
+  it('apiKey 非空时带 Bearer', async () => {
+    const fetchImpl = okFetch();
+    const client = createOpenAiCompatibleClient({
+      provider: 'zhipu',
+      label: '智谱',
+      baseUrl: 'http://example.test/v1',
+      apiKey: 'k',
+      model: 'm',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    await client.complete([{ role: 'user', content: 'hi' }]);
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer k');
+  });
+
+  it('apiKey 为空时请求头不带 authorization', async () => {
+    const fetchImpl = okFetch();
+    const client = createOpenAiCompatibleClient({
+      provider: 'zhipu',
+      label: '智谱',
+      baseUrl: 'http://example.test/v1',
+      apiKey: '   ',
+      model: 'm',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    await client.complete([{ role: 'user', content: 'hi' }]);
+
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.headers as Record<string, string>).authorization).toBeUndefined();
   });
 });
 
@@ -63,7 +110,7 @@ describe('parseLlmConfig', () => {
 
   it('未知 provider 抛错并给出可选值', () => {
     expect(() => parseLlmConfig({ provider: 'openai', apiKey: 'k' })).toThrow(
-      'provider 只能是 zhipu 或 deepseek 或 openrouter',
+      'provider 只能是 zhipu 或 deepseek 或 openrouter 或 omniroute',
     );
     expect(() => parseLlmConfig({ apiKey: 'k' })).toThrow(InvalidLlmConfigError);
   });
@@ -104,6 +151,25 @@ describe('parseLlmConfig', () => {
     expect(
       parseLlmConfig({ provider: 'zhipu', apiKey: 'k', baseUrl: 'http://evil.example' }),
     ).toEqual({ provider: 'zhipu', model: 'glm-4-flash', apiKey: 'k' });
+  });
+
+  it('omniroute 允许缺省或空 apiKey', () => {
+    expect(parseLlmConfig({ provider: 'omniroute', model: 'm1' })).toEqual({
+      provider: 'omniroute',
+      model: 'm1',
+      apiKey: '',
+    });
+    expect(parseLlmConfig({ provider: 'omniroute', model: 'm1', apiKey: '  ' })).toEqual({
+      provider: 'omniroute',
+      model: 'm1',
+      apiKey: '',
+    });
+  });
+
+  it('omniroute 的非字符串 apiKey 抛错', () => {
+    expect(() => parseLlmConfig({ provider: 'omniroute', model: 'm1', apiKey: 123 })).toThrow(
+      'apiKey 必须是字符串',
+    );
   });
 });
 
@@ -146,5 +212,58 @@ describe('createLlmClient', () => {
       text: '嗨',
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('createLlmClient(omniroute) 使用默认 baseUrl，忽略 config.apiKey', async () => {
+    const fetchImpl = okFetch();
+    const prevKey = process.env.OMNIROUTE_API_KEY;
+    const prevBase = process.env.OMNIROUTE_BASE_URL;
+    delete process.env.OMNIROUTE_API_KEY;
+    delete process.env.OMNIROUTE_BASE_URL;
+    try {
+      const client = createLlmClient(
+        { provider: 'omniroute', model: 'm', apiKey: 'browser-should-ignore' },
+        { fetchImpl: fetchImpl as unknown as typeof fetch },
+      );
+      expect(client.provider).toBe('omniroute');
+      await client.complete([{ role: 'user', content: 'hi' }]);
+      const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('http://127.0.0.1:20128/v1/chat/completions');
+      expect((init.headers as Record<string, string>).authorization).toBeUndefined();
+    } finally {
+      if (prevKey === undefined) delete process.env.OMNIROUTE_API_KEY;
+      else process.env.OMNIROUTE_API_KEY = prevKey;
+      if (prevBase === undefined) delete process.env.OMNIROUTE_BASE_URL;
+      else process.env.OMNIROUTE_BASE_URL = prevBase;
+    }
+  });
+
+  it('createLlmClient(omniroute) 使用 env 中的 Key 与 baseUrl', async () => {
+    const fetchImpl = okFetch();
+    const prevKey = process.env.OMNIROUTE_API_KEY;
+    const prevBase = process.env.OMNIROUTE_BASE_URL;
+    process.env.OMNIROUTE_API_KEY = 'env-secret';
+    process.env.OMNIROUTE_BASE_URL = 'http://127.0.0.1:9/v1';
+    try {
+      const client = createLlmClient(
+        { provider: 'omniroute', model: 'm', apiKey: 'browser' },
+        { fetchImpl: fetchImpl as unknown as typeof fetch },
+      );
+      await client.complete([{ role: 'user', content: 'hi' }]);
+      const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toBe('http://127.0.0.1:9/v1/chat/completions');
+      expect((init.headers as Record<string, string>).authorization).toBe('Bearer env-secret');
+    } finally {
+      if (prevKey === undefined) delete process.env.OMNIROUTE_API_KEY;
+      else process.env.OMNIROUTE_API_KEY = prevKey;
+      if (prevBase === undefined) delete process.env.OMNIROUTE_BASE_URL;
+      else process.env.OMNIROUTE_BASE_URL = prevBase;
+    }
+  });
+
+  it('按 provider 分发含 omniroute', () => {
+    const client = createLlmClient({ provider: 'omniroute', model: 'x', apiKey: '' });
+    expect(client.provider).toBe('omniroute');
+    expect(client.model).toBe('x');
   });
 });

@@ -1,4 +1,5 @@
 import { createDeepseekClient } from '@/lib/llm/deepseek';
+import { createOmnirouteClient } from '@/lib/llm/omniroute';
 import { createOpenrouterClient } from '@/lib/llm/openrouter';
 import { DEFAULT_MODELS, PROVIDERS, isLlmProvider } from '@/lib/llm/providers';
 import type { LlmClient, LlmProvider } from '@/lib/llm/types';
@@ -23,6 +24,7 @@ export class InvalidLlmConfigError extends Error {
 /**
  * 只认 provider / model / apiKey 三个字段，多出来的一律忽略。
  * 任何错误文案都不得回显 apiKey——错误会原样返回给浏览器。
+ * omniroute 允许缺省或空 apiKey（上游 Key 留在 OmniRoute / 服务端 env）。
  */
 export function parseLlmConfig(body: unknown): LlmConfig {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
@@ -46,6 +48,17 @@ export function parseLlmConfig(body: unknown): LlmConfig {
   }
 
   const rawApiKey = raw.apiKey;
+  if (provider === 'omniroute') {
+    if (rawApiKey !== undefined && typeof rawApiKey !== 'string') {
+      throw new InvalidLlmConfigError('apiKey 必须是字符串');
+    }
+    const apiKey = (typeof rawApiKey === 'string' ? rawApiKey : '').trim();
+    if (apiKey.length > MAX_API_KEY_LENGTH) {
+      throw new InvalidLlmConfigError(`apiKey 长度不能超过 ${MAX_API_KEY_LENGTH} 个字符`);
+    }
+    return { provider, model, apiKey };
+  }
+
   if (typeof rawApiKey !== 'string' || rawApiKey.trim() === '') {
     throw new InvalidLlmConfigError('缺少 apiKey：请在页面「模型设置」里填入该供应商的 API Key');
   }
@@ -80,5 +93,12 @@ export function createLlmClient(config: LlmConfig, options: CreateClientOptions 
       return createOpenrouterClient(shared);
     case 'zhipu':
       return createZhipuClient(shared);
+    case 'omniroute':
+      // 忽略浏览器传来的 apiKey，只用服务端 env（可空）。
+      return createOmnirouteClient({
+        ...shared,
+        apiKey: process.env.OMNIROUTE_API_KEY?.trim() ?? '',
+        baseUrl: process.env.OMNIROUTE_BASE_URL,
+      });
   }
 }

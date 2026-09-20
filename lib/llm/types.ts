@@ -1,4 +1,4 @@
-export type LlmProvider = 'zhipu' | 'deepseek' | 'openrouter';
+export type LlmProvider = 'zhipu' | 'deepseek' | 'openrouter' | 'omniroute';
 
 export interface LlmMessage {
   role: 'system' | 'user' | 'assistant';
