@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 
-import type { GodGameView } from '@/lib/game/types';
+import { seatName } from '@/lib/client/format';
+import type { GodGameView, PublicSeat } from '@/lib/game/types';
 
 interface GodPanelProps {
   gameId: string;
+  seats: PublicSeat[];
 }
 
-export function GodPanel({ gameId }: GodPanelProps) {
+export function GodPanel({ gameId, seats }: GodPanelProps) {
   const [open, setOpen] = useState(false);
   const [reveal, setReveal] = useState<GodGameView['reveal'] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,8 @@ export function GodPanel({ gameId }: GodPanelProps) {
         <ul className="god-list">
           {reveal.map((item) => (
             <li key={item.seatId}>
-              座位 {item.seatId}：{item.role === 'undercover' ? '卧底' : '平民'} ｜ 词：{item.word}
+              <strong>{seatName(seats, item.seatId)}</strong>（座位 {item.seatId}）：
+              {item.role === 'undercover' ? '卧底' : '平民'} ｜ 词：{item.word}
             </li>
           ))}
         </ul>

@@ -58,6 +58,19 @@ function newGame() {
 }
 
 describe('runGame', () => {
+  it('each ballot uses the same snapshot, so later voters cannot copy newly cast votes', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const visibleVotes: number[] = [];
+    for (const agent of deps.agents.values()) {
+      const vote = agent.vote.bind(agent);
+      agent.vote = async (view, candidates, rng) => {
+        visibleVotes.push(view.log.filter((e) => e.kind === 'vote').length);
+        return vote(view, candidates, rng);
+      };
+    }
+    await runGame(newGame(), deps);
+    expect(visibleVotes).toEqual([0, 0, 0, 0]);
+  });
   it('所有人投卧底时平民一轮取胜', async () => {
     const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
     const state = await runGame(newGame(), deps);

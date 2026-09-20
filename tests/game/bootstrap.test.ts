@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BILL_ESTIMATE_NOTE } from '@/lib/billing/estimate';
 import { startGame } from '@/lib/game/bootstrap';
 import { getSession } from '@/lib/game/registry';
+import { buildAgentView, toPublicView } from '@/lib/game/state';
 import { InvalidLlmConfigError } from '@/lib/llm/create-client';
 import type { LlmClient } from '@/lib/llm/types';
 
@@ -33,6 +34,20 @@ function fakeLlm(): LlmClient {
 }
 
 describe('startGame', () => {
+  it('连续开局使用共享牌袋，不重复同一词对且题材不进入玩家或公开视角', async () => {
+    const games = Array.from({ length: 4 }, () => startGame({ llm: fakeLlm(), rng: () => 0 }));
+    await Promise.all(games.map((game) => game.completion));
+    const keys = games.map((game) => [...new Set(game.state.seats.map((s) => s.word))].sort().join('/'));
+    expect(new Set(keys).size).toBe(4);
+    for (const game of games) {
+      const view = buildAgentView(game.state, 0);
+      expect(view).not.toHaveProperty('category');
+      expect(toPublicView(game.state)).not.toHaveProperty('category');
+      const otherWord = game.state.seats.find((seat) => seat.word !== view.word)!.word;
+      expect(JSON.stringify(view)).not.toContain(otherWord);
+    }
+  });
+
   it('既没有 llmConfig 也没有注入 llm 时抛 InvalidLlmConfigError，且不建局', () => {
     expect(() => startGame()).toThrow(InvalidLlmConfigError);
     expect(() => startGame()).toThrow('缺少模型配置');

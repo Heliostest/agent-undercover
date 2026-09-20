@@ -56,6 +56,26 @@ describe('renderTranscript', () => {
 });
 
 describe('buildSpeechMessages', () => {
+  it('首轮给出保守开口策略，后续轮次才要求补充细节', () => {
+    const opening = buildSpeechMessages(PERSONAS[2], { ...VIEW, round: 1, log: [] })[1].content;
+    const later = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(opening).toContain('首轮先藏一点');
+    expect(opening).not.toContain('比上一轮多补一点');
+    expect(later).toContain('比上一轮多补一点');
+    expect(later).not.toContain('首轮先藏一点');
+  });
+
+  it('被投过票时提醒温和自辩，不把其他人的受怀疑状态套到自己身上', () => {
+    const unchallenged = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    const challenged = buildSpeechMessages(PERSONAS[2], {
+      ...VIEW,
+      log: [...VIEW.log, { kind: 'vote', round: 1, seatId: 3, targetSeatId: 2, reason: '他太直白', fallback: false }],
+    })[1].content;
+    expect(unchallenged).not.toContain('有人投过你');
+    expect(challenged).toContain('有人投过你');
+    expect(challenged).toContain('他太直白');
+  });
+
   it('第一条是人设 system，第二条 user 含自己的词、轮次与公开记录', () => {
     const messages = buildSpeechMessages(PERSONAS[2], VIEW);
     expect(messages).toHaveLength(2);
@@ -115,6 +135,12 @@ describe('parseSpeechReply', () => {
 });
 
 describe('parseVoteReply', () => {
+  it('拒绝在投票理由里泄露自己的词，但接受生活化的不泄词理由', () => {
+    expect(parseVoteReply('{"vote":3,"reason":"他说的不像豆浆"}', [0, 3], '豆浆')).toBeNull();
+    expect(parseVoteReply('{"vote":3,"reason":"他刚才说的，我平时还真没遇到过"}', [0, 3], '豆浆'))
+      .toEqual({ targetSeatId: 3, reason: '他刚才说的，我平时还真没遇到过' });
+  });
+
   it('取出合法候选与理由', () => {
     expect(parseVoteReply('{"vote":3,"reason":"他最虚"}', [0, 3])).toEqual({
       targetSeatId: 3,

@@ -8,6 +8,9 @@ export interface LlmMessage {
 export interface LlmCompleteOptions {
   temperature?: number;
   maxTokens?: number;
+  /** 上层管理重试时设为 0，避免嵌套重试。 */
+  maxRetries?: number;
+  signal?: AbortSignal;
 }
 
 /** 一次调用的 token 与缓存用量；供应商没给的部分记 0，并把对应的 reported 标成 false。 */
@@ -41,5 +44,17 @@ export class LlmError extends Error {
     super(message);
     this.name = 'LlmError';
     this.status = status;
+  }
+}
+
+/** 已收到响应但没有完整答案；用量仍应记账，由上层调整请求再试。 */
+export class LlmResponseError extends LlmError {
+  constructor(
+    message: string,
+    readonly kind: 'empty' | 'truncated',
+    readonly usage: LlmUsage,
+  ) {
+    super(message);
+    this.name = 'LlmResponseError';
   }
 }

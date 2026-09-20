@@ -1,0 +1,230 @@
+{
+  "round1": {
+    "status": "complete",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "versions": [
+      "baseline",
+      "evidence"
+    ],
+    "byVersion": {
+      "baseline": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.25,
+        "dimensions": {
+          "grounded": 3.75,
+          "information": 2.8333333333333335,
+          "concealment": 2.8333333333333335,
+          "naturalness": 3.6666666666666665,
+          "updating": 3.1666666666666665
+        },
+        "plannerFallbacks": 0,
+        "meanActionMs": 934,
+        "calls": 12,
+        "reportedTokens": 9229,
+        "unreportedCalls": 0
+      },
+      "evidence": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.2000000000000006,
+        "dimensions": {
+          "grounded": 3.6666666666666665,
+          "information": 2.6666666666666665,
+          "concealment": 3.1666666666666665,
+          "naturalness": 3.6666666666666665,
+          "updating": 2.8333333333333335
+        },
+        "plannerFallbacks": 1,
+        "meanActionMs": 2500.6666666666665,
+        "calls": 24,
+        "reportedTokens": 23673,
+        "unreportedCalls": 0
+      }
+    },
+    "paired": {
+      "firstHigher": 4,
+      "tied": 6,
+      "secondHigher": 2,
+      "unscored": 0
+    },
+    "totalCalls": 48,
+    "reportedTokens": 46273,
+    "judgeFailures": 0,
+    "seconds": 40.138
+  },
+  "round2": {
+    "status": "complete",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "versions": [
+      "evidence",
+      "deliberate"
+    ],
+    "byVersion": {
+      "evidence": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.4999999999999996,
+        "dimensions": {
+          "grounded": 3.8333333333333335,
+          "information": 3.25,
+          "concealment": 2.9166666666666665,
+          "naturalness": 3.9166666666666665,
+          "updating": 3.5833333333333335
+        },
+        "plannerFallbacks": 1,
+        "meanActionMs": 2639.25,
+        "calls": 24,
+        "reportedTokens": 23877,
+        "unreportedCalls": 0
+      },
+      "deliberate": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.283333333333333,
+        "dimensions": {
+          "grounded": 3.8333333333333335,
+          "information": 2.5,
+          "concealment": 3.25,
+          "naturalness": 3.8333333333333335,
+          "updating": 3
+        },
+        "plannerFallbacks": 2,
+        "meanActionMs": 3510.6666666666665,
+        "calls": 24,
+        "reportedTokens": 33873,
+        "unreportedCalls": 0
+      }
+    },
+    "paired": {
+      "firstHigher": 6,
+      "tied": 6,
+      "secondHigher": 0,
+      "unscored": 0
+    },
+    "totalCalls": 60,
+    "reportedTokens": 71142,
+    "judgeFailures": 0,
+    "seconds": 51.571
+  },
+  "round3": {
+    "status": "complete",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "versions": [
+      "baseline",
+      "adaptive"
+    ],
+    "byVersion": {
+      "baseline": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.3333333333333326,
+        "dimensions": {
+          "grounded": 3.8333333333333335,
+          "information": 3.0833333333333335,
+          "concealment": 2.6666666666666665,
+          "naturalness": 3.8333333333333335,
+          "updating": 3.25
+        },
+        "plannerFallbacks": 0,
+        "meanActionMs": 863.75,
+        "calls": 12,
+        "reportedTokens": 9668,
+        "unreportedCalls": 0
+      },
+      "adaptive": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.25,
+        "dimensions": {
+          "grounded": 3.75,
+          "information": 2.9166666666666665,
+          "concealment": 2.8333333333333335,
+          "naturalness": 3.9166666666666665,
+          "updating": 2.8333333333333335
+        },
+        "plannerFallbacks": 2,
+        "meanActionMs": 4041.5,
+        "calls": 28,
+        "reportedTokens": 40222,
+        "unreportedCalls": 0
+      }
+    },
+    "paired": {
+      "firstHigher": 5,
+      "tied": 4,
+      "secondHigher": 3,
+      "unscored": 0
+    },
+    "totalCalls": 52,
+    "reportedTokens": 64618,
+    "judgeFailures": 0,
+    "seconds": 57.991
+  },
+  "holdout": {
+    "status": "complete",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "versions": [
+      "baseline",
+      "adaptive"
+    ],
+    "byVersion": {
+      "baseline": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.2500000000000004,
+        "dimensions": {
+          "grounded": 3.6666666666666665,
+          "information": 3.1666666666666665,
+          "concealment": 2.5833333333333335,
+          "naturalness": 3.6666666666666665,
+          "updating": 3.1666666666666665
+        },
+        "plannerFallbacks": 0,
+        "meanActionMs": 903.5833333333334,
+        "calls": 12,
+        "reportedTokens": 9765,
+        "unreportedCalls": 0
+      },
+      "adaptive": {
+        "actions": 12,
+        "invalid": 0,
+        "scored": 12,
+        "mean": 3.1333333333333333,
+        "dimensions": {
+          "grounded": 3.6666666666666665,
+          "information": 2.75,
+          "concealment": 2.5833333333333335,
+          "naturalness": 3.8333333333333335,
+          "updating": 2.8333333333333335
+        },
+        "plannerFallbacks": 2,
+        "meanActionMs": 3860.0833333333335,
+        "calls": 27,
+        "reportedTokens": 38757,
+        "unreportedCalls": 0
+      }
+    },
+    "paired": {
+      "firstHigher": 7,
+      "tied": 2,
+      "secondHigher": 3,
+      "unscored": 0
+    },
+    "totalCalls": 51,
+    "reportedTokens": 63363,
+    "judgeFailures": 0,
+    "seconds": 56.063
+  }
+}

@@ -1,0 +1,867 @@
+{
+  "gameId": "83afddae-a3a0-44dd-9046-5fcf6a0e52d7",
+  "strategy": "adaptive",
+  "purpose": "integration smoke test only, not a paired performance trial",
+  "events": [
+    {
+      "gameId": "83afddae-a3a0-44dd-9046-5fcf6a0e52d7",
+      "round": 2,
+      "phase": "result",
+      "activeSeatId": null,
+      "seats": [
+        {
+          "id": 0,
+          "name": "阿岚",
+          "personaLabel": "慢热稳当",
+          "alive": false
+        },
+        {
+          "id": 1,
+          "name": "小柯",
+          "personaLabel": "爱接梗",
+          "alive": true
+        },
+        {
+          "id": 2,
+          "name": "雷子",
+          "personaLabel": "直来直去",
+          "alive": false
+        },
+        {
+          "id": 3,
+          "name": "沉舟",
+          "personaLabel": "话少眼尖",
+          "alive": true
+        }
+      ],
+      "log": [
+        {
+          "kind": "speech",
+          "round": 1,
+          "seatId": 0,
+          "text": "每天早读前我都要在门口站一会儿，看谁踩着点冲进来，顺手把迟到的名字记在本子上。",
+          "fallback": false
+        },
+        {
+          "kind": "speech",
+          "round": 1,
+          "seatId": 1,
+          "text": "我早上也常掐着点出门，路上还得顺路买杯豆浆，到工位先喘口气。",
+          "fallback": false
+        },
+        {
+          "kind": "speech",
+          "round": 1,
+          "seatId": 2,
+          "text": "我早上到店先看一圈，谁没把货摆齐我就直接喊一声，省得回头再返工。",
+          "fallback": false
+        },
+        {
+          "kind": "speech",
+          "round": 1,
+          "seatId": 3,
+          "text": "我早上到岗也先绕一圈，看谁还没动起来，就过去敲敲桌子提醒一句。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 1,
+          "seatId": 0,
+          "targetSeatId": 1,
+          "reason": "小柯只说自己掐点买豆浆，没提看谁没到位，跟我和另两人的早上不太一样，先猜他吧。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 1,
+          "seatId": 1,
+          "targetSeatId": 2,
+          "reason": "雷子那句到店先看一圈、谁没摆齐就喊一声，听着太像在管人，我先押他试试。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 1,
+          "seatId": 2,
+          "targetSeatId": 3,
+          "reason": "沉舟说绕一圈敲桌子提醒人，跟我平时盯人的劲儿有点像，我想听他后面怎么接。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 1,
+          "seatId": 3,
+          "targetSeatId": 2,
+          "reason": "雷子那句直接喊人返工，比记名字更像在派活，先试探一下。",
+          "fallback": false
+        },
+        {
+          "kind": "elimination",
+          "round": 1,
+          "seatId": 2,
+          "tieBreak": false
+        },
+        {
+          "kind": "speech",
+          "round": 2,
+          "seatId": 0,
+          "text": "早上我习惯在楼梯口多站两分钟，看谁进楼时脚步急，回头好提醒一句别落下东西。",
+          "fallback": false
+        },
+        {
+          "kind": "speech",
+          "round": 2,
+          "seatId": 1,
+          "text": "我早上确实不盯人，到工位先喘口气，然后翻翻今天谁请假、活儿怎么分，心里有个数。",
+          "fallback": false
+        },
+        {
+          "kind": "speech",
+          "round": 2,
+          "seatId": 3,
+          "text": "我早上到岗先看一圈进度，谁卡住了就过去问一句，顺手把今天的活儿排一排。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 2,
+          "seatId": 0,
+          "targetSeatId": 3,
+          "reason": "沉舟两轮都在说看进度、排活、敲桌子提醒，跟雷子被投时那句太像，我先押他试试。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 2,
+          "seatId": 1,
+          "targetSeatId": 0,
+          "reason": "阿岚上轮先投我，这轮又讲楼梯口看人提醒，我先投他，看看后面怎么接。",
+          "fallback": false
+        },
+        {
+          "kind": "vote",
+          "round": 2,
+          "seatId": 3,
+          "targetSeatId": 0,
+          "reason": "阿岚两轮都在门口或楼梯口看人，跟我的早上有点像，先试探一下。",
+          "fallback": false
+        },
+        {
+          "kind": "elimination",
+          "round": 2,
+          "seatId": 0,
+          "tieBreak": false
+        }
+      ],
+      "winner": "civilians",
+      "errorMessage": null,
+      "bill": null
+    },
+    {
+      "type": "phase",
+      "phase": "setup",
+      "round": 0,
+      "activeSeatId": null
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 1,
+      "activeSeatId": 0
+    },
+    {
+      "type": "speech",
+      "round": 1,
+      "seatId": 0,
+      "text": "每天早读前我都要在门口站一会儿，看谁踩着点冲进来，顺手把迟到的名字记在本子上。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 1,
+      "activeSeatId": 1
+    },
+    {
+      "type": "speech",
+      "round": 1,
+      "seatId": 1,
+      "text": "我早上也常掐着点出门，路上还得顺路买杯豆浆，到工位先喘口气。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 1,
+      "activeSeatId": 2
+    },
+    {
+      "type": "speech",
+      "round": 1,
+      "seatId": 2,
+      "text": "我早上到店先看一圈，谁没把货摆齐我就直接喊一声，省得回头再返工。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 1,
+      "activeSeatId": 3
+    },
+    {
+      "type": "speech",
+      "round": 1,
+      "seatId": 3,
+      "text": "我早上到岗也先绕一圈，看谁还没动起来，就过去敲敲桌子提醒一句。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "vote",
+      "round": 1,
+      "activeSeatId": null
+    },
+    {
+      "type": "vote",
+      "round": 1,
+      "seatId": 0,
+      "targetSeatId": 1,
+      "reason": "小柯只说自己掐点买豆浆，没提看谁没到位，跟我和另两人的早上不太一样，先猜他吧。",
+      "fallback": false
+    },
+    {
+      "type": "vote",
+      "round": 1,
+      "seatId": 1,
+      "targetSeatId": 2,
+      "reason": "雷子那句到店先看一圈、谁没摆齐就喊一声，听着太像在管人，我先押他试试。",
+      "fallback": false
+    },
+    {
+      "type": "vote",
+      "round": 1,
+      "seatId": 2,
+      "targetSeatId": 3,
+      "reason": "沉舟说绕一圈敲桌子提醒人，跟我平时盯人的劲儿有点像，我想听他后面怎么接。",
+      "fallback": false
+    },
+    {
+      "type": "vote",
+      "round": 1,
+      "seatId": 3,
+      "targetSeatId": 2,
+      "reason": "雷子那句直接喊人返工，比记名字更像在派活，先试探一下。",
+      "fallback": false
+    },
+    {
+      "type": "result",
+      "round": 1,
+      "eliminatedSeatId": 2,
+      "tieBreak": false,
+      "winner": null,
+      "reveal": null
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 2,
+      "activeSeatId": 0
+    },
+    {
+      "type": "speech",
+      "round": 2,
+      "seatId": 0,
+      "text": "早上我习惯在楼梯口多站两分钟，看谁进楼时脚步急，回头好提醒一句别落下东西。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 2,
+      "activeSeatId": 1
+    },
+    {
+      "type": "speech",
+      "round": 2,
+      "seatId": 1,
+      "text": "我早上确实不盯人，到工位先喘口气，然后翻翻今天谁请假、活儿怎么分，心里有个数。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "speak",
+      "round": 2,
+      "activeSeatId": 3
+    },
+    {
+      "type": "speech",
+      "round": 2,
+      "seatId": 3,
+      "text": "我早上到岗先看一圈进度，谁卡住了就过去问一句，顺手把今天的活儿排一排。",
+      "fallback": false
+    },
+    {
+      "type": "phase",
+      "phase": "vote",
+      "round": 2,
+      "activeSeatId": null
+    },
+    {
+      "type": "vote",
+      "round": 2,
+      "seatId": 0,
+      "targetSeatId": 3,
+      "reason": "沉舟两轮都在说看进度、排活、敲桌子提醒，跟雷子被投时那句太像，我先押他试试。",
+      "fallback": false
+    },
+    {
+      "type": "vote",
+      "round": 2,
+      "seatId": 1,
+      "targetSeatId": 0,
+      "reason": "阿岚上轮先投我，这轮又讲楼梯口看人提醒，我先投他，看看后面怎么接。",
+      "fallback": false
+    },
+    {
+      "type": "vote",
+      "round": 2,
+      "seatId": 3,
+      "targetSeatId": 0,
+      "reason": "阿岚两轮都在门口或楼梯口看人，跟我的早上有点像，先试探一下。",
+      "fallback": false
+    },
+    {
+      "type": "bill",
+      "bill": {
+        "gameId": "83afddae-a3a0-44dd-9046-5fcf6a0e52d7",
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "finishedAt": 1789823527240,
+        "estimated": true,
+        "calls": [
+          {
+            "at": 1789823468180,
+            "seatId": 0,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 731,
+            "completionTokens": 282,
+            "totalTokens": 1013,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 347,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823469325,
+            "seatId": 0,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1005,
+            "completionTokens": 32,
+            "totalTokens": 1037,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 877,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823472213,
+            "seatId": 1,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 785,
+            "completionTokens": 349,
+            "totalTokens": 1134,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 401,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823472807,
+            "seatId": 1,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1093,
+            "completionTokens": 29,
+            "totalTokens": 1122,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 965,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823476025,
+            "seatId": 2,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 836,
+            "completionTokens": 467,
+            "totalTokens": 1303,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 452,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823476607,
+            "seatId": 2,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1195,
+            "completionTokens": 31,
+            "totalTokens": 1226,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1067,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823479911,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 889,
+            "completionTokens": 478,
+            "totalTokens": 1367,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 505,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823482845,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 966,
+            "completionTokens": 400,
+            "totalTokens": 1366,
+            "cacheHitTokens": 768,
+            "cacheMissTokens": 198,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823483615,
+            "seatId": 3,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1211,
+            "completionTokens": 28,
+            "totalTokens": 1239,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1083,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823486372,
+            "seatId": 0,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1255,
+            "completionTokens": 492,
+            "totalTokens": 1747,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 871,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823487361,
+            "seatId": 0,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1189,
+            "completionTokens": 37,
+            "totalTokens": 1226,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1061,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823490497,
+            "seatId": 1,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1319,
+            "completionTokens": 452,
+            "totalTokens": 1771,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 935,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823491036,
+            "seatId": 1,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1219,
+            "completionTokens": 37,
+            "totalTokens": 1256,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1091,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823494023,
+            "seatId": 2,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1381,
+            "completionTokens": 426,
+            "totalTokens": 1807,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 997,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823494590,
+            "seatId": 2,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1200,
+            "completionTokens": 31,
+            "totalTokens": 1231,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1072,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823497084,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1369,
+            "completionTokens": 403,
+            "totalTokens": 1772,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 985,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823497810,
+            "seatId": 3,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1172,
+            "completionTokens": 29,
+            "totalTokens": 1201,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1044,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823500401,
+            "seatId": 0,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1675,
+            "completionTokens": 377,
+            "totalTokens": 2052,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1291,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823503481,
+            "seatId": 0,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1752,
+            "completionTokens": 510,
+            "totalTokens": 2262,
+            "cacheHitTokens": 1536,
+            "cacheMissTokens": 216,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823504154,
+            "seatId": 0,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1444,
+            "completionTokens": 32,
+            "totalTokens": 1476,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1316,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823507580,
+            "seatId": 1,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1757,
+            "completionTokens": 482,
+            "totalTokens": 2239,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1373,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823508230,
+            "seatId": 1,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1555,
+            "completionTokens": 34,
+            "totalTokens": 1589,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1427,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823511138,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1756,
+            "completionTokens": 423,
+            "totalTokens": 2179,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1372,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823511876,
+            "seatId": 3,
+            "phase": "speak",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1544,
+            "completionTokens": 29,
+            "totalTokens": 1573,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1416,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823515252,
+            "seatId": 0,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1823,
+            "completionTokens": 440,
+            "totalTokens": 2263,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1439,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823516019,
+            "seatId": 0,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1483,
+            "completionTokens": 39,
+            "totalTokens": 1522,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1355,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823518773,
+            "seatId": 1,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1875,
+            "completionTokens": 488,
+            "totalTokens": 2363,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1491,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823519760,
+            "seatId": 1,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1531,
+            "completionTokens": 35,
+            "totalTokens": 1566,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1403,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823522291,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1811,
+            "completionTokens": 421,
+            "totalTokens": 2232,
+            "cacheHitTokens": 384,
+            "cacheMissTokens": 1427,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823525986,
+            "seatId": 3,
+            "phase": "think",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1888,
+            "completionTokens": 437,
+            "totalTokens": 2325,
+            "cacheHitTokens": 1664,
+            "cacheMissTokens": 224,
+            "usageReported": true,
+            "cacheReported": true
+          },
+          {
+            "at": 1789823527240,
+            "seatId": 3,
+            "phase": "vote",
+            "provider": "deepseek",
+            "model": "deepseek-flash",
+            "promptTokens": 1484,
+            "completionTokens": 29,
+            "totalTokens": 1513,
+            "cacheHitTokens": 128,
+            "cacheMissTokens": 1356,
+            "usageReported": true,
+            "cacheReported": true
+          }
+        ],
+        "bySeat": [
+          {
+            "seatId": 0,
+            "calls": 9,
+            "promptTokens": 12357,
+            "completionTokens": 2241,
+            "totalTokens": 14598,
+            "cacheHitTokens": 3584,
+            "cacheMissTokens": 8773,
+            "estimatedCostCny": 0.0426
+          },
+          {
+            "seatId": 1,
+            "calls": 8,
+            "promptTokens": 11134,
+            "completionTokens": 1906,
+            "totalTokens": 13040,
+            "cacheHitTokens": 2048,
+            "cacheMissTokens": 9086,
+            "estimatedCostCny": 0.0375
+          },
+          {
+            "seatId": 2,
+            "calls": 4,
+            "promptTokens": 4612,
+            "completionTokens": 955,
+            "totalTokens": 5567,
+            "cacheHitTokens": 1024,
+            "cacheMissTokens": 3588,
+            "estimatedCostCny": 0.0169
+          },
+          {
+            "seatId": 3,
+            "calls": 10,
+            "promptTokens": 14090,
+            "completionTokens": 2677,
+            "totalTokens": 16767,
+            "cacheHitTokens": 4480,
+            "cacheMissTokens": 9610,
+            "estimatedCostCny": 0.0496
+          }
+        ],
+        "totals": {
+          "calls": 31,
+          "promptTokens": 42193,
+          "completionTokens": 7779,
+          "totalTokens": 49972,
+          "cacheHitTokens": 11136,
+          "cacheMissTokens": 31057,
+          "cacheReportedCalls": 31,
+          "usageMissingCalls": 0,
+          "estimatedCostCny": 0.1466
+        },
+        "notes": [
+          "本账单为本地估算，实际费用以供应商官方账单为准。",
+          "模型 deepseek-flash 不在内置价目表里，已按 DeepSeek 默认档单价估算。",
+          "缓存命中的 token 按 prompt 单价计入，没有做缓存折扣。"
+        ]
+      }
+    },
+    {
+      "type": "result",
+      "round": 2,
+      "eliminatedSeatId": 0,
+      "tieBreak": false,
+      "winner": "civilians",
+      "reveal": [
+        {
+          "seatId": 0,
+          "role": "undercover",
+          "word": "班主任"
+        },
+        {
+          "seatId": 1,
+          "role": "civilian",
+          "word": "老板"
+        },
+        {
+          "seatId": 2,
+          "role": "civilian",
+          "word": "老板"
+        },
+        {
+          "seatId": 3,
+          "role": "civilian",
+          "word": "老板"
+        }
+      ]
+    }
+  ]
+}

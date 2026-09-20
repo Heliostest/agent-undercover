@@ -1,6 +1,7 @@
 import { parseUsage } from '@/lib/llm/usage';
 import {
   LlmError,
+  LlmResponseError,
   type LlmClient,
   type LlmCompleteOptions,
   type LlmCompletion,
@@ -12,7 +13,7 @@ export const RETRY_BASE_DELAY_MS = 500;
 export const DEFAULT_MAX_RETRIES = 2;
 export const DEFAULT_TIMEOUT_MS = 20_000;
 export const DEFAULT_TEMPERATURE = 0.4;
-export const DEFAULT_MAX_TOKENS = 400;
+export const DEFAULT_MAX_TOKENS = 1024;
 
 export interface OpenAiCompatibleOptions {
   provider: LlmProvider;
@@ -23,6 +24,8 @@ export interface OpenAiCompatibleOptions {
   model: string;
   /** 供应商额外要求的请求头（如 OpenRouter 的 HTTP-Referer / X-Title）；不会覆盖认证与 content-type。 */
   extraHeaders?: Record<string, string>;
+  /** 仅在明确支持该参数的供应商适配器中启用。 */
+  disableThinking?: boolean;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
   maxRetries?: number;
@@ -31,6 +34,9 @@ export interface OpenAiCompatibleOptions {
 
 /** 429 / 5xx / 网络错误 / 超时都值得重试；其余 4xx 是我们自己的请求有问题，重试没意义。 */
 export function isRetryable(error: unknown): boolean {
+  if (error instanceof LlmResponseError) {
+    return false;
+  }
   if (error instanceof LlmError && error.status !== undefined) {
     return error.status === 429 || error.status >= 500;
   }
@@ -49,6 +55,9 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
     completeOptions?: LlmCompleteOptions,
   ): Promise<LlmCompletion> {
     const controller = new AbortController();
+    const abort = () => controller.abort();
+    completeOptions?.signal?.throwIfAborted();
+    completeOptions?.signal?.addEventListener('abort', abort, { once: true });
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetchImpl(`${options.baseUrl}/chat/completions`, {
@@ -64,6 +73,7 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
           temperature: completeOptions?.temperature ?? DEFAULT_TEMPERATURE,
           max_tokens: completeOptions?.maxTokens ?? DEFAULT_MAX_TOKENS,
           stream: false,
+          ...(options.disableThinking ? { thinking: { type: 'disabled' } } : {}),
         }),
         signal: controller.signal,
       });
@@ -78,16 +88,21 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
       }
 
       const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
         usage?: unknown;
       };
       const content = payload.choices?.[0]?.message?.content;
-      if (typeof content !== 'string' || content.trim() === '') {
-        throw new LlmError(`${options.label}接口返回了空内容`);
+      const usage = parseUsage(payload.usage);
+      if (payload.choices?.[0]?.finish_reason === 'length') {
+        throw new LlmResponseError(`${options.label}输出达到长度限制`, 'truncated', usage);
       }
-      return { text: content, usage: parseUsage(payload.usage) };
+      if (typeof content !== 'string' || content.trim() === '') {
+        throw new LlmResponseError(`${options.label}接口返回了空内容`, 'empty', usage);
+      }
+      return { text: content, usage };
     } finally {
       clearTimeout(timer);
+      completeOptions?.signal?.removeEventListener('abort', abort);
     }
   }
 
@@ -95,13 +110,15 @@ export function createOpenAiCompatibleClient(options: OpenAiCompatibleOptions): 
     provider: options.provider,
     model: options.model,
     async complete(messages, completeOptions) {
+      const retryLimit = completeOptions?.maxRetries ?? maxRetries;
       let lastError: unknown = new LlmError(`${options.label}请求未执行`);
-      for (let retry = 0; retry <= maxRetries; retry += 1) {
+      for (let retry = 0; retry <= retryLimit; retry += 1) {
+        completeOptions?.signal?.throwIfAborted();
         try {
           return await attempt(messages, completeOptions);
         } catch (error) {
           lastError = error;
-          if (!isRetryable(error) || retry === maxRetries) {
+          if (completeOptions?.signal?.aborted || !isRetryable(error) || retry === retryLimit) {
             break;
           }
           await sleep(RETRY_BASE_DELAY_MS * 2 ** retry);

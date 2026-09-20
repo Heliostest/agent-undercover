@@ -72,6 +72,7 @@ async function collectVotes(
   ensureTime: EnsureTime,
 ): Promise<VoteEntry[]> {
   const entries: VoteEntry[] = [];
+  const views = new Map(voterIds.map((id) => [id, buildAgentView(state, id)]));
   for (const voterId of voterIds) {
     ensureTime();
     const candidateIds = targetPool.filter((seatId) => seatId !== voterId);
@@ -80,7 +81,7 @@ async function collectVotes(
     }
     state.activeSeatId = voterId;
     const result = await requireAgent(deps, voterId).vote(
-      buildAgentView(state, voterId),
+      views.get(voterId)!,
       candidateIds,
       deps.rng,
     );

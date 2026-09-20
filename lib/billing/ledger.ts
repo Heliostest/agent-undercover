@@ -1,6 +1,6 @@
 import type { LlmProvider, LlmUsage } from '@/lib/llm/types';
 
-export type UsagePhase = 'speak' | 'vote';
+export type UsagePhase = 'speak' | 'vote' | 'think';
 
 export interface UsageRecordInput {
   seatId: number;

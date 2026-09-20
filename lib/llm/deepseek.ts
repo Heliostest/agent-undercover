@@ -22,6 +22,8 @@ export function createDeepseekClient(options: DeepseekClientOptions): LlmClient 
     baseUrl: options.baseUrl ?? DEEPSEEK_DEFAULT_BASE_URL,
     apiKey: options.apiKey,
     model: options.model,
+    // 当前 DeepSeek 默认开启思考；游戏只需简短 JSON，显式关闭以免耗尽输出额度。
+    disableThinking: true,
     fetchImpl: options.fetchImpl,
     sleep: options.sleep,
     maxRetries: options.maxRetries,

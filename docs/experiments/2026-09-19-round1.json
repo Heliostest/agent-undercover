@@ -1,0 +1,1252 @@
+{
+  "status": "complete",
+  "startedAt": "2026-09-19T12:53:48.185Z",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "options": {
+    "caseIds": [
+      "pencil-exposure",
+      "care-or-control",
+      "interview-overlap",
+      "nostalgia-not-contradiction"
+    ],
+    "strategies": [
+      "baseline",
+      "evidence"
+    ],
+    "repetitions": 1
+  },
+  "fingerprint": "3425ffb9389408f7c50b079786b5dec035df720cac4f8704bf8b7574ff7339b7",
+  "rows": [
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "我桌上笔筒里插了好几支，写东西前总要先挑一下哪支顺手。",
+      "valid": true,
+      "latencyMs": 1228,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我桌上笔筒里总插着几支，写东西前还得挑一下哪支顺手。",
+      "valid": true,
+      "latencyMs": 2376,
+      "plannerFallbacks": 1,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "我包里那支短得都快握不住了，削的时候木屑掉一地，还得拿纸接着。",
+      "valid": true,
+      "latencyMs": 747,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 2,
+        "concealment": 1,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我包里也遭过一次，后来就塞了张纸巾垫着，至少不直接糊到内衬上。",
+      "valid": true,
+      "latencyMs": 2579,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 4,
+        "naturalness": 4,
+        "updating": 4
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "baseline",
+      "output": "{\"targetSeatId\":2,\"reason\":\"雷子第一轮说随手放，第二轮又说用完就盖，感觉像顺着小柯漏了那句接的。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 909,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 3,
+        "concealment": 2,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "evidence",
+      "output": "{\"targetSeatId\":3,\"reason\":\"沉舟第一轮说没听太明白就投我，这轮又没细说，我想先看看他到底怎么想的。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 2251,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "我妈每次打电话都问我吃了没，其实我刚吃完，但还得再听她念十分钟。",
+      "valid": true,
+      "latencyMs": 1550,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我妈也是，出门穿少了能被念到进电梯，后来我干脆拍张外套照发过去。",
+      "valid": true,
+      "latencyMs": 3244,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "沉舟你投我我认了，我确实说得虚。补一个：我出差那几天，我爸不打电话，就每天给我发天气预报。",
+      "valid": true,
+      "latencyMs": 966,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我室友有回看我咳了两声，第二天桌上就多了盒润喉糖，也没多问。",
+      "valid": true,
+      "latencyMs": 2690,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "baseline",
+      "output": "{\"targetSeatId\":3,\"reason\":\"你第一轮说没听明白就投我，这轮又没接话，我有点犯嘀咕。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 776,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "evidence",
+      "output": "{\"targetSeatId\":2,\"reason\":\"雷子那句“不能只看问了几遍”像在替追问找补，我听着有点犯嘀咕。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 2400,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 2
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "我最烦那种全程尬笑的场面，坐那儿半小时就想找借口溜。",
+      "valid": true,
+      "latencyMs": 979,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我最怕那种一坐下就被问东问西，像查户口似的，只能硬着头皮答。",
+      "valid": true,
+      "latencyMs": 1951,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "沉舟你上轮投我，我认，那会儿我确实没说明白。我补充个细节：介绍人还老爱问“感觉咋样”，我一般就回“还行吧”，其实心里早想撤了。",
+      "valid": true,
+      "latencyMs": 683,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 4,
+        "concealment": 4,
+        "naturalness": 4,
+        "updating": 4
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "散场后我妈还追着问怎么样，我只能说还行吧，其实心里早想撤了。",
+      "valid": true,
+      "latencyMs": 2849,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 4,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "baseline",
+      "output": "{\"targetSeatId\":0,\"reason\":\"阿岚说挑衣服装自然，又说等消息没下文，听着像走流程，可细节有点飘。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 871,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "evidence",
+      "output": "{\"targetSeatId\":3,\"reason\":\"沉舟到现在就一句没听太明白，别的啥也没说，我有点犯嘀咕。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 2171,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "我一般是下午撑不住的时候来一口，喝完又觉得晚上要遭报应。",
+      "valid": true,
+      "latencyMs": 950,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 0,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "我一般是下午困得不行才喝，喝完又怕晚上睡不着。",
+      "valid": true,
+      "latencyMs": 2377,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "baseline",
+      "output": "雷子你上一轮投我，估计是嫌我说得太虚。我下午那口一般不加东西，苦着喝完，晚上照样睡不着。",
+      "valid": true,
+      "latencyMs": 760,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 3
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 1,
+      "phase": "speak",
+      "strategy": "evidence",
+      "output": "下午那杯我常放凉了才想起来，喝到最后一口全是渣，还得拿水涮涮杯子。",
+      "valid": true,
+      "latencyMs": 2436,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 2
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "baseline",
+      "output": "{\"targetSeatId\":1,\"reason\":\"小柯先说忙起来才想起，这轮又改口成平时不碰、只周末来一点，前后听着不太顺。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 789,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 4,
+        "information": 3,
+        "concealment": 3,
+        "naturalness": 4,
+        "updating": 4
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "split": "train",
+      "repetition": 0,
+      "stage": 2,
+      "phase": "vote",
+      "strategy": "evidence",
+      "output": "{\"targetSeatId\":2,\"reason\":\"你上轮投我那句“还没听太明白”太随手了，这轮也没补出自己平时怎么碰它。\",\"fallback\":false}",
+      "valid": true,
+      "latencyMs": 2684,
+      "plannerFallbacks": 0,
+      "scores": {
+        "grounded": 3,
+        "information": 2,
+        "concealment": 3,
+        "naturalness": 3,
+        "updating": 2
+      }
+    }
+  ],
+  "calls": [
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 1227,
+      "ok": true,
+      "usage": {
+        "promptTokens": 673,
+        "completionTokens": 25,
+        "totalTokens": 698,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 545,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1580,
+      "ok": true,
+      "usage": {
+        "promptTokens": 526,
+        "completionTokens": 153,
+        "totalTokens": 679,
+        "cacheHitTokens": 0,
+        "cacheMissTokens": 526,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 795,
+      "ok": true,
+      "usage": {
+        "promptTokens": 673,
+        "completionTokens": 26,
+        "totalTokens": 699,
+        "cacheHitTokens": 512,
+        "cacheMissTokens": 161,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 612,
+      "ok": true,
+      "usage": {
+        "promptTokens": 812,
+        "completionTokens": 58,
+        "totalTokens": 870,
+        "cacheHitTokens": 0,
+        "cacheMissTokens": 812,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 746,
+      "ok": true,
+      "usage": {
+        "promptTokens": 795,
+        "completionTokens": 27,
+        "totalTokens": 822,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 667,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1599,
+      "ok": true,
+      "usage": {
+        "promptTokens": 721,
+        "completionTokens": 186,
+        "totalTokens": 907,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 593,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 980,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1023,
+        "completionTokens": 29,
+        "totalTokens": 1052,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 767,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 1005,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1120,
+        "completionTokens": 58,
+        "totalTokens": 1178,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 992,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 908,
+      "ok": true,
+      "usage": {
+        "promptTokens": 730,
+        "completionTokens": 33,
+        "totalTokens": 763,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 602,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1168,
+      "ok": true,
+      "usage": {
+        "promptTokens": 961,
+        "completionTokens": 186,
+        "totalTokens": 1147,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 833,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1082,
+      "ok": true,
+      "usage": {
+        "promptTokens": 960,
+        "completionTokens": 36,
+        "totalTokens": 996,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 704,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "pencil-exposure",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 850,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1256,
+        "completionTokens": 58,
+        "totalTokens": 1314,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 1128,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 1549,
+      "ok": true,
+      "usage": {
+        "promptTokens": 672,
+        "completionTokens": 25,
+        "totalTokens": 697,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 544,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 2267,
+      "ok": true,
+      "usage": {
+        "promptTokens": 524,
+        "completionTokens": 184,
+        "totalTokens": 708,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 396,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 977,
+      "ok": true,
+      "usage": {
+        "promptTokens": 897,
+        "completionTokens": 27,
+        "totalTokens": 924,
+        "cacheHitTokens": 640,
+        "cacheMissTokens": 257,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 892,
+      "ok": true,
+      "usage": {
+        "promptTokens": 799,
+        "completionTokens": 58,
+        "totalTokens": 857,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 671,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 966,
+      "ok": true,
+      "usage": {
+        "promptTokens": 796,
+        "completionTokens": 37,
+        "totalTokens": 833,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 668,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1833,
+      "ok": true,
+      "usage": {
+        "promptTokens": 905,
+        "completionTokens": 238,
+        "totalTokens": 1143,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 777,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 856,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1077,
+        "completionTokens": 27,
+        "totalTokens": 1104,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 821,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 728,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1119,
+        "completionTokens": 58,
+        "totalTokens": 1177,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 991,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 776,
+      "ok": true,
+      "usage": {
+        "promptTokens": 741,
+        "completionTokens": 31,
+        "totalTokens": 772,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 613,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1715,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1010,
+        "completionTokens": 260,
+        "totalTokens": 1270,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 882,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 685,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1034,
+        "completionTokens": 31,
+        "totalTokens": 1065,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 778,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "care-or-control",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 861,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1248,
+        "completionTokens": 58,
+        "totalTokens": 1306,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 1120,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 979,
+      "ok": true,
+      "usage": {
+        "promptTokens": 680,
+        "completionTokens": 21,
+        "totalTokens": 701,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 552,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1390,
+      "ok": true,
+      "usage": {
+        "promptTokens": 527,
+        "completionTokens": 172,
+        "totalTokens": 699,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 399,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 561,
+      "ok": true,
+      "usage": {
+        "promptTokens": 893,
+        "completionTokens": 27,
+        "totalTokens": 920,
+        "cacheHitTokens": 640,
+        "cacheMissTokens": 253,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 827,
+      "ok": true,
+      "usage": {
+        "promptTokens": 799,
+        "completionTokens": 58,
+        "totalTokens": 857,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 671,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 683,
+      "ok": true,
+      "usage": {
+        "promptTokens": 797,
+        "completionTokens": 55,
+        "totalTokens": 852,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 669,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1955,
+      "ok": true,
+      "usage": {
+        "promptTokens": 893,
+        "completionTokens": 241,
+        "totalTokens": 1134,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 765,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 894,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1085,
+        "completionTokens": 27,
+        "totalTokens": 1112,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 829,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 716,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1131,
+        "completionTokens": 58,
+        "totalTokens": 1189,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 1003,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 870,
+      "ok": true,
+      "usage": {
+        "promptTokens": 760,
+        "completionTokens": 32,
+        "totalTokens": 792,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 632,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1365,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1013,
+        "completionTokens": 229,
+        "totalTokens": 1242,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 885,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 806,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1008,
+        "completionTokens": 28,
+        "totalTokens": 1036,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 752,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "interview-overlap",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 958,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1258,
+        "completionTokens": 58,
+        "totalTokens": 1316,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 1130,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 950,
+      "ok": true,
+      "usage": {
+        "promptTokens": 674,
+        "completionTokens": 23,
+        "totalTokens": 697,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 546,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1581,
+      "ok": true,
+      "usage": {
+        "promptTokens": 524,
+        "completionTokens": 143,
+        "totalTokens": 667,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 396,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 796,
+      "ok": true,
+      "usage": {
+        "promptTokens": 858,
+        "completionTokens": 20,
+        "totalTokens": 878,
+        "cacheHitTokens": 640,
+        "cacheMissTokens": 218,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 852,
+      "ok": true,
+      "usage": {
+        "promptTokens": 787,
+        "completionTokens": 58,
+        "totalTokens": 845,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 659,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 760,
+      "ok": true,
+      "usage": {
+        "promptTokens": 793,
+        "completionTokens": 36,
+        "totalTokens": 829,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 665,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1806,
+      "ok": true,
+      "usage": {
+        "promptTokens": 847,
+        "completionTokens": 195,
+        "totalTokens": 1042,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 719,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 630,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1026,
+        "completionTokens": 31,
+        "totalTokens": 1057,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 770,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 991,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1104,
+        "completionTokens": 58,
+        "totalTokens": 1162,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 976,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "baseline",
+      "latencyMs": 789,
+      "ok": true,
+      "usage": {
+        "promptTokens": 737,
+        "completionTokens": 36,
+        "totalTokens": 773,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 609,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 1815,
+      "ok": true,
+      "usage": {
+        "promptTokens": 965,
+        "completionTokens": 211,
+        "totalTokens": 1176,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 837,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "player",
+      "strategy": "evidence",
+      "latencyMs": 869,
+      "ok": true,
+      "usage": {
+        "promptTokens": 981,
+        "completionTokens": 35,
+        "totalTokens": 1016,
+        "cacheHitTokens": 256,
+        "cacheMissTokens": 725,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    },
+    {
+      "caseId": "nostalgia-not-contradiction",
+      "role": "grader",
+      "strategy": null,
+      "latencyMs": 825,
+      "ok": true,
+      "usage": {
+        "promptTokens": 1242,
+        "completionTokens": 58,
+        "totalTokens": 1300,
+        "cacheHitTokens": 128,
+        "cacheMissTokens": 1114,
+        "usageReported": true,
+        "cacheReported": true
+      }
+    }
+  ],
+  "judgeFailures": 0,
+  "completedPairs": 12,
+  "totalPairs": 12,
+  "completedAt": "2026-09-19T12:54:28.323Z"
+}

@@ -37,7 +37,25 @@ function renderRoster(view: AgentView): string {
 }
 
 const RULES_BRIEF =
-  '你正在玩「谁是卧底」。全场 4 人，其中 3 名平民拿到同一个词，1 名卧底拿到一个近义但不同的词。没有人知道自己是不是卧底。';
+  '你正在玩「谁是卧底」。全场 4 人，其中 3 名平民拿到同一个词，1 名卧底拿到一个有关联但不同的词。没有人知道自己是不是卧底。词可能是物品、人物、行为或处境，同一句话可能说的是两回事，不要认定大家都在说同一种场景。';
+
+function speechStrategy(view: AgentView): string {
+  const pacing = view.round === 1
+    ? '首轮先藏一点：只聊一个宽泛但真实的生活场景、感受或小习惯，给同词的人一点共鸣就收住。不要上来就报最有辨识度的外形、数字、习性组合。'
+    : '这轮可以比上一轮多补一点：给一个新的小细节，别重复原话，也别把关键特征一次说齐。前后要自洽，不能看别人说什么就改口。';
+  const underSuspicion = view.log.some(
+    (entry) => entry.kind === 'vote' && !entry.fallback && entry.targetSeatId === view.seatId,
+  );
+  return [
+    pacing,
+    '先在心里判断自己和大家像不像同一个词，不要宣布自己的身份。觉得自己可能是少数那方时，选与自己词也相符的共通经历接话，不要主动强调“你们说的我都对不上”，也不要硬编自己的词没有的特点。',
+    '藏词不等于空话：每次仍要给一点能聊下去的真实信息，不能只说“很常见”“挺有用”，也不要只催别人发言。被点名时先自然回应，再补一小点即可。',
+    '不要每次都以“我也”“那味儿我懂”“他说的我有同感”开头。前面的人聊过某种气味、外形或经历，就换个生活角度，别整桌围着同一个细节跟读。',
+    ...(underSuspicion
+      ? ['公开记录里有人投过你：可以用一小点生活细节回应他的疑问，别着急报出决定性特征来证明清白。']
+      : []),
+  ].join('\n');
+}
 
 export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessage[] {
   return [
@@ -50,7 +68,8 @@ export function buildSpeechMessages(persona: Persona, view: AgentView): LlmMessa
         `座位表：${renderRoster(view)}`,
         `现在是第 ${view.round} 轮发言。到目前为止的公开记录：`,
         renderTranscript(view),
-        '要求：用 1~3 句话描述你手里的词，可以结合别人的发言。绝对不能写出词面本身，也不能拆字或拼音暗示；不要复述别人的原句。',
+        speechStrategy(view),
+        'speech 只写 1~2 句生活里的短话，尽量 20~45 个汉字，说完就收，不必每次都反问大家。不要列清单或做总结。绝对不能写出词面本身，也不能拆字、谐音或拼音暗示；不要复述别人的原句。',
         '只输出 JSON，格式严格为：{"speech":"你的发言"}',
       ].join('\n'),
     },
@@ -76,6 +95,9 @@ export function buildVoteMessages(
         `现在是第 ${view.round} 轮投票。到目前为止的公开记录：`,
         renderTranscript(view),
         `可投的座位号：${candidates}。你必须从中选一个，不能弃票，不能投自己。`,
+        '投票理由也是公开发言：一句口语就够，只挑对方真正说过的一处让你犯嘀咕的地方，不做长篇判案。绝不能报出自己的词面，也不要说你猜到的另一张词，更不能用完整定义暗示答案。',
+        '你也可能拿了不同的词，别默认自己一定是平民。想想谁前后改口、谁跟着别人说、谁的生活细节不太搭；有理由地选人，不必为了与多数人一致就暴露自己的词。',
+        '别照搬前面玩家的投票理由；已经有人投他不算新证据。小时候和长大后的感受不同，不等于前后矛盾；没把握就承认是在猜，别为了投票硬编破绽。',
         '只输出 JSON，格式严格为：{"vote":0,"reason":"一句话理由"}',
       ].join('\n'),
     },
@@ -119,6 +141,7 @@ export function parseSpeechReply(raw: string, forbiddenWord: string): string | n
 export function parseVoteReply(
   raw: string,
   candidateIds: number[],
+  forbiddenWord?: string,
 ): { targetSeatId: number; reason: string } | null {
   const parsed = extractJsonObject(raw);
   if (!parsed) {
@@ -132,5 +155,8 @@ export function parseVoteReply(
   }
   const rawReason = parsed.reason;
   const reason = typeof rawReason === 'string' && rawReason.trim() !== '' ? rawReason.trim() : DEFAULT_VOTE_REASON;
+  if (forbiddenWord && reason.includes(forbiddenWord)) {
+    return null;
+  }
   return { targetSeatId, reason };
 }

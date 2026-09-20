@@ -8,9 +8,14 @@ export type Winner = 'civilians' | 'undercover';
 
 export const SEAT_COUNT = 4;
 
+export const WORD_CATEGORIES = ['classic', 'workplace', 'social', 'daily', 'mixup'] as const;
+export type WordCategory = (typeof WORD_CATEGORIES)[number];
+
 export interface WordPair {
   civilian: string;
   undercover: string;
+  /** 仅供服务端抽题，不能发给玩家作为额外线索。 */
+  category?: WordCategory;
 }
 
 export interface Persona {

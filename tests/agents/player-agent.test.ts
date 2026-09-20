@@ -1,14 +1,16 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PERSONAS } from '@/lib/agents/personas';
 import {
-  FALLBACK_SPEECH,
   FALLBACK_VOTE_REASON,
   PlayerAgent,
 } from '@/lib/agents/player-agent';
 import type { UsageRecordInput } from '@/lib/billing/ledger';
 import type { AgentView } from '@/lib/game/types';
 import type { LlmClient, LlmUsage } from '@/lib/llm/types';
+import { LlmError } from '@/lib/llm/types';
+
+afterEach(() => vi.useRealTimers());
 
 const VIEW: AgentView = {
   seatId: 2,
@@ -77,23 +79,104 @@ describe('PlayerAgent.speak', () => {
     expect(llm.complete).toHaveBeenCalledTimes(2);
   });
 
-  it('两次都不合格时兜底为空发言并标记 fallback', async () => {
-    const llm = scriptedLlm(['乱七八糟', '还是乱七八糟']);
+  it('五次都不合格时明确报错，不把空发言交给后续玩家', async () => {
+    const llm = scriptedLlm(Array(5).fill('乱七八糟'));
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
-    await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
-    expect(llm.complete).toHaveBeenCalledTimes(2);
+    await expect(agent.speak(VIEW)).rejects.toThrow('5 次');
+    expect(llm.complete).toHaveBeenCalledTimes(5);
   });
 
-  it('模型连续抛错时也兜底，不向外抛', async () => {
-    const llm = scriptedLlm([new Error('网络炸了'), new Error('又炸了')]);
+  it('模型连续抛错时有限退避后报错，不泄露原始异常', async () => {
+    vi.useFakeTimers();
+    const llm = scriptedLlm(Array(5).fill(new Error('secret-key 网络炸了')));
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
-    await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
+    const result = agent.speak(VIEW).catch((error: Error) => error.message);
+    await vi.runAllTimersAsync();
+    expect(await result).toContain('5 次');
+    expect(await result).not.toContain('secret-key');
+    expect(llm.complete).toHaveBeenCalledTimes(5);
+  });
+
+  it('第三次才合格也能成功，纠正反馈指出格式与泄词错误', async () => {
+    const requests: string[] = [];
+    const replies = ['不是 JSON', '{"speech":"豆浆很好喝"}', '{"speech":"早餐常见的白色饮品"}'];
+    const llm: LlmClient = {
+      provider: 'zhipu', model: 'glm-4-flash',
+      async complete(messages) {
+        requests.push(messages.at(-1)!.content);
+        return { text: replies.shift()!, usage: SAMPLE_USAGE };
+      },
+    };
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
+    await expect(agent.speak(VIEW)).resolves.toEqual({ text: '早餐常见的白色饮品', fallback: false });
+    expect(requests).toHaveLength(3);
+    expect(requests[1]).toContain('JSON');
+    expect(requests[2]).toContain('词面');
+  });
+
+  it('第五次成功后立刻停止重试', async () => {
+    const llm = scriptedLlm([...Array(4).fill('格式错误'), '{"speech":"白色饮品"}']);
+    await expect(new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW))
+      .resolves.toEqual({ text: '白色饮品', fallback: false });
+    expect(llm.complete).toHaveBeenCalledTimes(5);
+  });
+
+  it('401 不重复请求，给出可操作错误且不泄露供应商原文', async () => {
+    const llm = scriptedLlm([new LlmError('secret-key', 401)]);
+    const result = await new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW)
+      .catch((error: Error) => error.message);
+    expect(result).toContain('API Key');
+    expect(result).not.toContain('secret-key');
+    expect(llm.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('90 秒到期会取消请求并停止重试，即使模型客户端不响应取消', async () => {
+    vi.useFakeTimers();
+    let signal: AbortSignal | undefined;
+    const complete = vi.fn<LlmClient['complete']>(async (_messages, options) => {
+      signal = options?.signal;
+      return new Promise(() => {});
+    });
+    const llm: LlmClient = { provider: 'deepseek', model: 'deepseek-flash', complete };
+    const result = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).speak(VIEW)
+      .catch((error: Error) => error.message);
+    await vi.advanceTimersByTimeAsync(90_000);
+    expect(await result).toContain('90 秒');
+    expect(signal?.aborted).toBe(true);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
 describe('PlayerAgent.vote', () => {
+  it('投票理由直接报出自己的词时要求重写，只发布不泄词的结果', async () => {
+    const requests: string[] = [];
+    const replies = ['{"vote":1,"reason":"他说的和豆浆不同"}', '{"vote":1,"reason":"他刚才那句跟我想的有点岔"}'];
+    const llm: LlmClient = {
+      provider: 'zhipu', model: 'glm-4-flash',
+      async complete(messages) {
+        requests.push(messages.at(-1)!.content);
+        return { text: replies.shift()!, usage: SAMPLE_USAGE };
+      },
+    };
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
+    await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
+      targetSeatId: 1, reason: '他刚才那句跟我想的有点岔', fallback: false,
+    });
+    expect(requests).toHaveLength(2);
+    expect(requests[1]).toContain('词面');
+  });
+
+  it('投票重写后仍然泄词时不公开原话', async () => {
+    const llm = scriptedLlm(Array(2).fill('{"vote":1,"reason":"我的词是豆浆"}'));
+    const result = await new PlayerAgent(PERSONAS[2], { llm, seatId: 2 }).vote(VIEW, [0, 1, 3], () => 0);
+    expect(result.fallback).toBe(true);
+    expect(result.reason).not.toContain('豆浆');
+    expect([0, 1, 3]).toContain(result.targetSeatId);
+  });
+
   it('合法投票直接返回', async () => {
     const llm = scriptedLlm(['{"vote":1,"reason":"描述太笼统"}']);
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
@@ -190,7 +273,8 @@ describe('PlayerAgent 用量上报', () => {
   });
 
   it('调用抛错时不上报（没拿到响应就没有 usage）', async () => {
-    const llm = scriptedLlm([new Error('socket hang up'), new Error('socket hang up')]);
+    vi.useFakeTimers();
+    const llm = scriptedLlm(Array(5).fill(new Error('socket hang up')));
     const reported: UsageRecordInput[] = [];
     const agent = new PlayerAgent(PERSONAS[2], {
       llm,
@@ -198,7 +282,9 @@ describe('PlayerAgent 用量上报', () => {
       onUsage: (input) => reported.push(input),
     });
 
-    await expect(agent.speak(VIEW)).resolves.toEqual({ text: FALLBACK_SPEECH, fallback: true });
+    const result = agent.speak(VIEW).catch((error: Error) => error.message);
+    await vi.runAllTimersAsync();
+    expect(await result).toContain('5 次');
     expect(reported).toEqual([]);
   });
 

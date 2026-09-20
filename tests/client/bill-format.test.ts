@@ -99,6 +99,6 @@ describe('formatCallCost', () => {
 
 describe('USAGE_PHASE_LABELS', () => {
   it('两个阶段都有中文名', () => {
-    expect(USAGE_PHASE_LABELS).toEqual({ speak: '发言', vote: '投票' });
+    expect(USAGE_PHASE_LABELS).toEqual({ speak: '发言', vote: '投票', think: '思考' });
   });
 });
