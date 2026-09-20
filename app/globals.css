@@ -335,3 +335,15 @@ button.primary {
 .history-row button {
   margin-left: auto;
 }
+
+
+.settings-model-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-model-row select {
+  flex: 1;
+  min-width: 0;
+}
