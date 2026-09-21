@@ -4,6 +4,7 @@ import { PERSONAS } from '@/lib/agents/personas';
 import {
   AGENT_MAX_ATTEMPTS,
   FALLBACK_VOTE_REASON,
+  formatFallbackVoteReason,
   PlayerAgent,
   SPEECH_MAX_ATTEMPTS,
   SPEECH_TIMEOUT_MS,
@@ -273,17 +274,33 @@ describe('PlayerAgent.vote', () => {
     expect(llm.complete).toHaveBeenCalledTimes(2);
   });
 
-  it('两次都不合格时按 rng 随机投一个合法候选', async () => {
+  it('两次都不合格时按 rng 随机投一个合法候选，理由带上失败原因', async () => {
     const llm = scriptedLlm(['不是 JSON', '还是不是 JSON']);
     const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
 
     await expect(agent.vote(VIEW, [0, 1, 3], () => 0.99)).resolves.toEqual({
       targetSeatId: 3,
-      reason: FALLBACK_VOTE_REASON,
+      reason: formatFallbackVoteReason('输出不是合法 JSON'),
       // 兜底票没有真实的内心活动可展示，留空字符串而不是编一段。
       thought: '',
       fallback: true,
     });
+  });
+
+  it('调用失败走兜底时理由标明模型调用失败', async () => {
+    const complete = vi.fn<LlmClient['complete']>(async () => {
+      throw new Error('boom');
+    });
+    const llm: LlmClient = { provider: 'omniroute', model: 'deepseek/deepseek-flash', complete };
+    const agent = new PlayerAgent(PERSONAS[2], { llm, seatId: 2 });
+
+    await expect(agent.vote(VIEW, [0, 1, 3], () => 0)).resolves.toEqual({
+      targetSeatId: 0,
+      reason: formatFallbackVoteReason('模型调用失败或返回空'),
+      thought: '',
+      fallback: true,
+    });
+    expect(complete).toHaveBeenCalledTimes(2);
   });
 
   it('投票同样关闭客户端内重试，重试预算由这一层独占', async () => {

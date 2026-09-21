@@ -260,6 +260,40 @@ export function parseSpeechReply(
   return { text, thought: parseThought(parsed) };
 }
 
+
+/** 说明 parseVoteReply 为何判不合格，给投票兜底理由用（公开可见，勿回填模型原文）。 */
+export function diagnoseVoteFailure(
+  raw: string | null,
+  candidateIds: number[],
+  forbiddenWord?: string,
+): string {
+  if (raw === null || raw.trim() === '') {
+    return '模型调用失败或返回空';
+  }
+  const parsed = extractJsonObject(raw);
+  if (!parsed) {
+    return '输出不是合法 JSON';
+  }
+  const rawVote = parsed.vote;
+  const targetSeatId =
+    typeof rawVote === 'number' ? rawVote : typeof rawVote === 'string' ? Number(rawVote) : Number.NaN;
+  if (!Number.isInteger(targetSeatId)) {
+    return 'vote 不是整数座位号';
+  }
+  if (!candidateIds.includes(targetSeatId)) {
+    return `vote=${targetSeatId} 不在候选 ${candidateIds.join('、')}`;
+  }
+  const rawReason = parsed.reason;
+  if (
+    forbiddenWord &&
+    typeof rawReason === 'string' &&
+    rawReason.includes(forbiddenWord)
+  ) {
+    return '公开理由写出了自己的词';
+  }
+  return '投票未通过校验';
+}
+
 export function parseVoteReply(
   raw: string,
   candidateIds: number[],

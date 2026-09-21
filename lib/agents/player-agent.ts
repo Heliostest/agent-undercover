@@ -3,6 +3,7 @@ import {
   buildVoteMessages,
   extractJsonObject,
   parseSpeechReply,
+  diagnoseVoteFailure,
   parseVoteReply,
 } from '@/lib/agents/prompt';
 import type { UsagePhase, UsageSink } from '@/lib/billing/ledger';
@@ -17,6 +18,10 @@ import {
 } from '@/lib/llm/types';
 
 export const FALLBACK_VOTE_REASON = '（模型没有给出有效投票，已随机选择）';
+export function formatFallbackVoteReason(detail: string): string {
+  const clean = detail.trim() || '未知原因';
+  return `（模型没有给出有效投票：${clean}，已随机选择）`;
+}
 export const AGENT_MAX_ATTEMPTS = 2;
 /**
  * 发言/投票的重试次数与墙上时钟时限是两道独立的闸：
@@ -157,6 +162,7 @@ export class PlayerAgent implements SeatAgent {
   ): Promise<VoteResult> {
     const baseMessages = buildVoteMessages(this.persona, view, candidateIds);
     let correction = '';
+    let lastFailure = '未知原因';
     for (let attempt = 0; attempt < AGENT_MAX_ATTEMPTS; attempt += 1) {
       signal.throwIfAborted();
       const messages: LlmMessage[] = correction
@@ -164,12 +170,14 @@ export class PlayerAgent implements SeatAgent {
         : baseMessages;
       const raw = await this.tryComplete(messages, 'vote', signal);
       if (raw === null) {
+        lastFailure = diagnoseVoteFailure(null, candidateIds, view.word);
         continue;
       }
       const parsed = parseVoteReply(raw, candidateIds, view.word);
       if (parsed !== null) {
         return { ...parsed, fallback: false };
       }
+      lastFailure = diagnoseVoteFailure(raw, candidateIds, view.word);
       const reason = extractJsonObject(raw)?.reason;
       correction = typeof reason === 'string' && reason.includes(view.word)
         ? '上次投票理由泄露了你的词面。reason 是公开的，请藏住词面，改用一句日常口语指出对方发言让你疑惑的地方，不要报答案；涉及词面的推理写进私密的 thought 里。重新输出合法的 {"thought":"你的内心推理","vote":座位号,"reason":"一句口语理由"}。'
@@ -177,7 +185,7 @@ export class PlayerAgent implements SeatAgent {
     }
     return {
       targetSeatId: pickRandom(candidateIds, rng),
-      reason: FALLBACK_VOTE_REASON,
+      reason: formatFallbackVoteReason(lastFailure),
       // 兜底票不是模型的判断，没有真实内心活动可记，留空而不是编一段。
       thought: '',
       fallback: true,
