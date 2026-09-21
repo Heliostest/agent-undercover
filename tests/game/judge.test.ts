@@ -6,7 +6,8 @@ import {
   runGame,
   type JudgeDeps,
 } from '@/lib/game/judge';
-import { createGame } from '@/lib/game/state';
+import { SPEECH_ANGLES } from '@/lib/game/speech-angles';
+import { createGame, toGodView, toPublicView } from '@/lib/game/state';
 import type { AgentView, GameEvent, Persona, SeatAgent } from '@/lib/game/types';
 
 type PhaseEvent = Extract<GameEvent, { type: 'phase' }>;
@@ -141,6 +142,24 @@ describe('runGame', () => {
     }
   });
 
+  it('每位发言者都收到一个 speechAngle，同一轮里四个人的角度互不重复', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const angles: (string | undefined)[] = [];
+    for (const agent of deps.agents.values()) {
+      const speak = agent.speak.bind(agent);
+      agent.speak = async (view, signal) => {
+        angles.push(view.speechAngle?.id);
+        return speak(view, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    expect(angles).toHaveLength(4);
+    expect(angles.every((id) => typeof id === 'string')).toBe(true);
+    expect(new Set(angles).size).toBe(4);
+  });
+
   it('每个存活者每轮都发一次言', async () => {
     const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
     await runGame(newGame(), deps);
@@ -148,6 +167,63 @@ describe('runGame', () => {
     const speeches = events.filter((event) => event.type === 'speech');
     expect(speeches).toHaveLength(4);
     expect(speeches.map((event) => (event.type === 'speech' ? event.seatId : -1))).toEqual([0, 1, 2, 3]);
+  });
+
+  it('发言角度绝不外泄：广播事件、服务端日志与公开/上帝视角里都没有它', async () => {
+    const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const state = await runGame(newGame(), deps);
+
+    const exposed = [
+      JSON.stringify(events),
+      JSON.stringify(state.log),
+      JSON.stringify(toPublicView(state)),
+      JSON.stringify(toGodView(state)),
+    ];
+    for (const serialized of exposed) {
+      expect(serialized).not.toContain('speechAngle');
+      for (const angle of SPEECH_ANGLES) {
+        expect(serialized).not.toContain(angle.label);
+        expect(serialized).not.toContain(angle.hint);
+      }
+    }
+  });
+
+  it('角度只进发言视图：投票视图里没有 speechAngle', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const voteViews: (unknown | undefined)[] = [];
+    for (const agent of deps.agents.values()) {
+      const vote = agent.vote.bind(agent);
+      agent.vote = async (view, candidates, rng, signal) => {
+        voteViews.push(view.speechAngle);
+        return vote(view, candidates, rng, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    expect(voteViews.length).toBeGreaterThan(0);
+    expect(voteViews.every((angle) => angle === undefined)).toBe(true);
+  });
+
+  it('别人的发言视图里只有自己的角度，看不到同桌谁分到了什么', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const seen: string[] = [];
+    for (const agent of deps.agents.values()) {
+      const speak = agent.speak.bind(agent);
+      agent.speak = async (view, signal) => {
+        const { speechAngle, ...rest } = view;
+        seen.push(JSON.stringify(rest));
+        return speak(view, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    for (const serialized of seen) {
+      for (const angle of SPEECH_ANGLES) {
+        expect(serialized).not.toContain(angle.label);
+      }
+    }
   });
 
   it('结束时推一条带 winner 与 reveal 的 result 事件', async () => {

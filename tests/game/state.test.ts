@@ -249,4 +249,8 @@ describe('buildAgentView', () => {
     eliminate(state, 1, false);
     expect(buildAgentView(state, 2).aliveOtherIds).toEqual([0, 3]);
   });
+
+  it('默认不含 speechAngle：角度由裁判在发言前单独注入', () => {
+    expect(buildAgentView(newGame(2), 2).speechAngle).toBeUndefined();
+  });
 });
