@@ -50,7 +50,12 @@ export function SettingsForm({
         onChangeRef.current({ ...current, provider: 'omniroute', model: '', apiKey: '' });
         return;
       }
-      const nextModel = list.includes(current.model) ? current.model : list[0];
+      const preferred = DEFAULT_MODELS.omniroute;
+      const nextModel = list.includes(current.model)
+        ? current.model
+        : list.includes(preferred)
+          ? preferred
+          : list[0];
       onChangeRef.current({ ...current, provider: 'omniroute', model: nextModel, apiKey: '' });
     } catch {
       setModels([]);

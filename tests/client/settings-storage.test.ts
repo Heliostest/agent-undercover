@@ -32,8 +32,8 @@ function memoryStorage(initial: Record<string, string> = {}) {
 const FILLED: LlmSettings = { provider: 'deepseek', model: 'deepseek-chat', apiKey: 'sk-1' };
 
 describe('defaultSettings', () => {
-  it('默认是智谱 + glm-4-flash + 空 Key', () => {
-    expect(defaultSettings()).toEqual({ provider: 'zhipu', model: 'glm-4-flash', apiKey: '' });
+  it('默认是 OmniRoute + deepseek/deepseek-flash + 空 Key', () => {
+    expect(defaultSettings()).toEqual({ provider: 'omniroute', model: 'deepseek/deepseek-flash', apiKey: '' });
   });
 });
 
@@ -51,8 +51,8 @@ describe('parseSettings', () => {
 
   it('未知 provider 回落到默认供应商与默认模型', () => {
     expect(parseSettings('{"provider":"openai","model":"gpt","apiKey":"k"}')).toEqual({
-      provider: 'zhipu',
-      model: 'glm-4-flash',
+      provider: 'omniroute',
+      model: 'deepseek/deepseek-flash',
       apiKey: 'k',
     });
   });

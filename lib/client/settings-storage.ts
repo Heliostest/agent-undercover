@@ -18,7 +18,7 @@ export interface SettingsStorage {
 }
 
 export function defaultSettings(): LlmSettings {
-  return { provider: 'zhipu', model: DEFAULT_MODELS.zhipu, apiKey: '' };
+  return { provider: 'omniroute', model: DEFAULT_MODELS.omniroute, apiKey: '' };
 }
 
 /** localStorage 里的东西是用户可改的脏数据：任何异常都回落到默认值，绝不抛。 */
