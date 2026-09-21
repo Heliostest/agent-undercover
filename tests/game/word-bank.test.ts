@@ -38,8 +38,8 @@ describe('validateWordPairs', () => {
   });
 
   it('接受 spicy 题材并原样返回', () => {
-    expect(validateWordPairs([{ civilian: '塌房', undercover: '翻车', category: 'spicy' }])).toEqual([
-      { civilian: '塌房', undercover: '翻车', category: 'spicy' },
+    expect(validateWordPairs([{ civilian: '小三', undercover: '前任', category: 'spicy' }])).toEqual([
+      { civilian: '小三', undercover: '前任', category: 'spicy' },
     ]);
   });
 });
@@ -63,8 +63,8 @@ describe('createWordPairDeck', () => {
     const deck = createWordPairDeck([
       { civilian: '牛奶', undercover: '豆浆', category: 'classic' },
       { civilian: '钢笔', undercover: '铅笔', category: 'classic' },
-      { civilian: '塌房', undercover: '翻车', category: 'spicy' },
-      { civilian: '对线', undercover: '撕逼', category: 'spicy' },
+      { civilian: '小三', undercover: '前任', category: 'spicy' },
+      { civilian: '彩礼', undercover: '嫁妆', category: 'spicy' },
     ]);
     const first = deck.draw(() => 0);
     const second = deck.draw(() => 0);
