@@ -7,6 +7,7 @@ import {
   buildVoteMessages,
   extractJsonObject,
   parseSpeechReply,
+  diagnoseVoteFailure,
   parseVoteReply,
   renderTranscript,
 } from '@/lib/agents/prompt';
@@ -403,5 +404,19 @@ describe('parseVoteReply', () => {
 
   it('不是 JSON 时返回 null', () => {
     expect(parseVoteReply('我投 3 号', [0, 3])).toBeNull();
+  });
+});
+
+
+describe('diagnoseVoteFailure', () => {
+  it('区分空响应、坏 JSON、非法座位、泄词', () => {
+    expect(diagnoseVoteFailure(null, [0, 1])).toBe('模型调用失败或返回空');
+    expect(diagnoseVoteFailure('废话', [0, 1])).toBe('输出不是合法 JSON');
+    expect(diagnoseVoteFailure('{"vote":9,"reason":"x"}', [0, 1])).toBe(
+      'vote=9 不在候选 0、1',
+    );
+    expect(diagnoseVoteFailure('{"vote":0,"reason":"我的词是豆浆"}', [0, 1], '豆浆')).toBe(
+      '公开理由写出了自己的词',
+    );
   });
 });
