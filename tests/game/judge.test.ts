@@ -141,6 +141,24 @@ describe('runGame', () => {
     }
   });
 
+  it('每位发言者都收到一个 speechAngle，同一轮里四个人的角度互不重复', async () => {
+    const { deps } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
+    const angles: (string | undefined)[] = [];
+    for (const agent of deps.agents.values()) {
+      const speak = agent.speak.bind(agent);
+      agent.speak = async (view, signal) => {
+        angles.push(view.speechAngle?.id);
+        return speak(view, signal);
+      };
+    }
+
+    await runGame(newGame(), deps);
+
+    expect(angles).toHaveLength(4);
+    expect(angles.every((id) => typeof id === 'string')).toBe(true);
+    expect(new Set(angles).size).toBe(4);
+  });
+
   it('每个存活者每轮都发一次言', async () => {
     const { deps, events } = makeDeps({ 0: [3], 1: [3], 2: [3], 3: [0] });
     await runGame(newGame(), deps);

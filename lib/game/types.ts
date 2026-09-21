@@ -1,5 +1,6 @@
 import type { Bill } from '@/lib/billing/estimate';
 import type { UsagePhase } from '@/lib/billing/ledger';
+import type { SpeechAngle } from '@/lib/game/speech-angles';
 import type { LlmProvider } from '@/lib/llm/types';
 
 export type Phase = 'setup' | 'speak' | 'vote' | 'result' | 'error';
@@ -143,6 +144,11 @@ export interface AgentView {
   seats: PublicSeat[];
   log: PublicLogEntry[];
   aliveOtherIds: number[];
+  /**
+   * 本轮分给这个座位的发言角度：只用于构建他自己的 speech 提示词。
+   * 裁判在调用 speak 前注入，其他座位看不到，也绝不能进公开 log / SSE 事件。
+   */
+  speechAngle?: SpeechAngle;
 }
 
 export interface SpeechResult {

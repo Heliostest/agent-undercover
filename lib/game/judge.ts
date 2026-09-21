@@ -1,4 +1,5 @@
 import { checkWinner, pickRandom, tallyVotes, topCandidates } from '@/lib/game/rules';
+import { pickSpeechAngles } from '@/lib/game/speech-angles';
 import {
   aliveSeats,
   buildAgentView,
@@ -56,10 +57,17 @@ async function runSpeechPhase(
   deps: JudgeDeps,
   ensureRunnable: EnsureRunnable,
 ): Promise<void> {
-  for (const seat of aliveSeats(state)) {
+  const speakers = aliveSeats(state);
+  // 本轮四条发言线先岔开，免得所有人挤同一个生活场景；角度只进各自的提示词。
+  const angles = pickSpeechAngles(
+    speakers.map((seat) => seat.id),
+    deps.rng,
+  );
+  for (const seat of speakers) {
     ensureRunnable();
     setPhase(state, deps, 'speak', seat.id);
-    const result = await requireAgent(deps, seat.id).speak(buildAgentView(state, seat.id), deps.signal);
+    const view = { ...buildAgentView(state, seat.id), speechAngle: angles.get(seat.id) };
+    const result = await requireAgent(deps, seat.id).speak(view, deps.signal);
     // 内心独白只落进服务端日志；下面广播出去的 speech 事件逐字段拼，绝不带上它。
     recordSpeech(state, {
       kind: 'speech',
