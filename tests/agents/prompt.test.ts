@@ -140,22 +140,45 @@ describe('buildSpeechMessages', () => {
     expect(content).toContain('不会给任何人看');
   });
 
-  it('已有人发言时，thought 要先判断谁同边、再判断谁对不上，最后才计划自己怎么说', () => {
+  it('已有人发言时，thought 按「猜另一张词 → 判平民或卧底 → 定策略 → 规划发言」的顺序推理', () => {
     const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
-    const sameSide = content.indexOf('和你的词像是同一边');
-    const opposite = content.indexOf('明显和你对不上');
+    const guess = content.indexOf('另一张词可能是什么');
+    const side = content.indexOf('我更像平民还是卧底');
+    // speechStrategy 里也讲了两种打法，这里认 thoughtPlan 独有的第三步措辞。
+    const strategy = content.indexOf('偏平民就写清');
     const plan = content.indexOf('最后才说你这轮打算藏什么');
 
-    expect(sameSide).toBeGreaterThan(-1);
-    expect(opposite).toBeGreaterThan(sameSide);
-    expect(plan).toBeGreaterThan(opposite);
+    expect(guess).toBeGreaterThan(-1);
+    expect(side).toBeGreaterThan(guess);
+    expect(strategy).toBeGreaterThan(side);
+    expect(plan).toBeGreaterThan(strategy);
+  });
+
+  it('允许猜错另一张词，并要求在 thought 里把猜的词直说出来', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(content).toContain('猜错');
+    expect(content).toContain('你猜的另一张词');
+  });
+
+  it('偏平民走试探埋钩，偏卧底按猜到的多数词伪装、只说两边都成立的话', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(content).toMatch(/偏平民.*试探|试探.*钩/);
+    expect(content).toContain('偏卧底');
+    expect(content).toContain('两边都成立');
+    expect(content).toContain('独特点');
+  });
+
+  it('多数与自己同边偏平民、多数对不上偏卧底的判据写进提示词', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(content).toMatch(/多数.*同.*边.*偏平民/);
+    expect(content).toMatch(/多数.*对不上.*偏卧底/);
   });
 
   it('自己是第一个开口的人时不要求对齐判断，只规划自己的发言', () => {
     const content = buildSpeechMessages(PERSONAS[2], { ...VIEW, round: 1, log: [] })[1].content;
     expect(content).toContain('还没有人发言');
-    expect(content).not.toContain('和你的词像是同一边');
-    expect(content).not.toContain('明显和你对不上');
+    expect(content).not.toContain('另一张词可能是什么');
+    expect(content).not.toContain('我更像平民还是卧底');
   });
 
   it('只有投票和出局、没人发过言时，同样按第一个开口的人处理', () => {
@@ -168,14 +191,14 @@ describe('buildSpeechMessages', () => {
       ],
     })[1].content;
     expect(content).toContain('还没有人发言');
-    expect(content).not.toContain('和你的词像是同一边');
+    expect(content).not.toContain('另一张词可能是什么');
   });
 
-  it('有前人发言时要求判断自己是否可能是少数，并禁止挤同一个场景', () => {
+  it('有前人发言时要求判断自己偏平民还是偏卧底，并禁止挤同一个场景', () => {
     const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
-    expect(content).toMatch(/少数/);
+    expect(content).toMatch(/平民|卧底/);
     expect(content).toMatch(/同一.*场景|挤/);
-    // 自觉少数时的伪装策略：贴多数人的说法框架，避开只属于自己词的独特点。
+    // 自觉偏卧底时的伪装策略：贴多数人的说法框架，避开只属于自己词的独特点。
     expect(content).toContain('借用');
     expect(content).toContain('独特点');
   });
@@ -199,22 +222,13 @@ describe('buildSpeechMessages', () => {
     expect(buildSpeechMessages(PERSONAS[2], VIEW)[1].content).not.toMatch(/本轮你的发言角度/);
   });
 
-  it('thought 里先判断同边与对不上，再判断自己是否少数，最后才规划发言', () => {
-    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
-    const opposite = content.indexOf('明显和你对不上');
-    // speechStrategy 里也提过多数/少数，这里认 thoughtPlan 独有的那句。
-    const minority = content.indexOf('判断自己这轮可能是多数还是少数');
-    const plan = content.indexOf('最后才说你这轮打算藏什么');
-
-    expect(minority).toBeGreaterThan(opposite);
-    expect(plan).toBeGreaterThan(minority);
-  });
 
   it('两种情形下 thought 都允许写出自己的词，speech 仍禁止泄词', () => {
     const views: AgentView[] = [VIEW, { ...VIEW, round: 1, log: [] }];
     for (const view of views) {
       const content = buildSpeechMessages(PERSONAS[2], view)[1].content;
-      expect(content).toContain('这里可以直接写出你的词，因为不会给任何人看');
+      expect(content).toContain('可以直接写出你的词');
+      expect(content).toContain('不会给任何人看');
       expect(content).toContain('绝对不能写出词面本身');
     }
   });
@@ -232,6 +246,24 @@ describe('buildVoteMessages', () => {
     const content = buildVoteMessages(PERSONAS[2], VIEW, [0, 3])[1].content;
     expect(content).toMatch(/场景/);
     expect(content).toContain('相容');
+  });
+
+  it('投票依据是「谁更像另一张词」，thought 先猜词再判自己偏平民还是偏卧底', () => {
+    const content = buildVoteMessages(PERSONAS[2], VIEW, [0, 3])[1].content;
+    const guess = content.indexOf('另一张词可能是什么');
+    const side = content.indexOf('我更像平民还是卧底');
+    const pick = content.indexOf('更像「另一张词」的人');
+
+    expect(guess).toBeGreaterThan(-1);
+    expect(side).toBeGreaterThan(guess);
+    expect(pick).toBeGreaterThan(side);
+    expect(content).toMatch(/不.*只因为.*场景/);
+  });
+
+  it('公开的 reason 既不能说出词面，也不能说出猜到的另一张词', () => {
+    const content = buildVoteMessages(PERSONAS[2], VIEW, [0, 3])[1].content;
+    expect(content).toContain('不要说你猜到的另一张词');
+    expect(content).toMatch(/reason 是公开的/);
   });
 
   it('投票也说明 thought 私密、reason 公开', () => {
