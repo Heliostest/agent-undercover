@@ -36,6 +36,12 @@ describe('validateWordPairs', () => {
       '第 0 项的两个词不能相同',
     );
   });
+
+  it('接受 spicy 题材并原样返回', () => {
+    expect(validateWordPairs([{ civilian: '塌房', undercover: '翻车', category: 'spicy' }])).toEqual([
+      { civilian: '塌房', undercover: '翻车', category: 'spicy' },
+    ]);
+  });
 });
 
 describe('createWordPairDeck', () => {
@@ -51,6 +57,21 @@ describe('createWordPairDeck', () => {
     const drawn = Array.from({ length: 4 }, () => deck.draw(() => 0));
     expect(drawn.map((p) => p.civilian)).toEqual(['牛奶', '相亲', '钢笔', '婚礼']);
     expect(drawn.map((p) => p.category)).toEqual(['classic', 'mixup', 'classic', 'mixup']);
+  });
+
+  it('袋内还有 spicy 时只抽 spicy，抽完才回落其他题材', () => {
+    const deck = createWordPairDeck([
+      { civilian: '牛奶', undercover: '豆浆', category: 'classic' },
+      { civilian: '钢笔', undercover: '铅笔', category: 'classic' },
+      { civilian: '塌房', undercover: '翻车', category: 'spicy' },
+      { civilian: '对线', undercover: '撕逼', category: 'spicy' },
+    ]);
+    const first = deck.draw(() => 0);
+    const second = deck.draw(() => 0);
+    expect(first.category).toBe('spicy');
+    expect(second.category).toBe('spicy');
+    const third = deck.draw(() => 0);
+    expect(third.category).toBe('classic');
   });
 
   it('换新袋后不紧接着重复上一袋的最后一题，即使只剩一种题材', () => {
