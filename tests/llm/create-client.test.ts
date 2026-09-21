@@ -30,7 +30,7 @@ describe('providers 常量', () => {
       zhipu: 'glm-4-flash',
       deepseek: 'deepseek-chat',
       openrouter: 'openai/gpt-4o-mini',
-      omniroute: 'omniroute-default',
+      omniroute: 'deepseek/deepseek-flash',
     });
   });
 

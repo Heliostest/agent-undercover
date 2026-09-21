@@ -12,10 +12,10 @@ import type { GameEvent, GameState, Phase, SeatAgent, VoteEntry } from '@/lib/ga
 
 /**
  * 单局墙上时钟上限。每一步（每次发言、每张选票）之前都会核一次，
- * 再加上 PlayerAgent 自己的发言 90 秒 / 投票 60 秒时限，
- * 保证整局不会在没人报错的情况下一直挂着。
+ * 再加上 PlayerAgent 自己的发言 / 投票时限；
+ * 默认 10 分钟墙上时钟，够 flash/v4 打完两轮，又不会无限挂着。
  */
-export const DEFAULT_HARD_TIMEOUT_MS = 180_000;
+export const DEFAULT_HARD_TIMEOUT_MS = 600_000;
 export const MAX_VOTE_ROUNDS = 2;
 export const HARD_TIMEOUT_MESSAGE = '单局硬超时，已终止本局';
 export const GAME_ABORTED_MESSAGE = '页面已关闭，本局已自动停止，以免继续消耗模型额度';
