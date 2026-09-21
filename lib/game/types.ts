@@ -11,7 +11,7 @@ export type Winner = 'civilians' | 'undercover';
 
 export const SEAT_COUNT = 4;
 
-export const WORD_CATEGORIES = ['classic', 'workplace', 'social', 'daily', 'mixup'] as const;
+export const WORD_CATEGORIES = ['classic', 'workplace', 'social', 'daily', 'mixup', 'spicy'] as const;
 export type WordCategory = (typeof WORD_CATEGORIES)[number];
 
 export interface WordPair {

@@ -39,7 +39,7 @@ export interface WordPairDeck {
   draw(rng?: () => number): WordPair;
 }
 
-/** 每袋不重复，优先换题材；重装时避开刚出的词对，发词方向单独随机。 */
+/** 每袋不重复，spicy 优先抽完再轮换题材；重装时避开刚出的词对，发词方向单独随机。 */
 export function createWordPairDeck(input: WordPair[]): WordPairDeck {
   const pairs = validateWordPairs(input);
   let remaining = [...pairs];
@@ -55,10 +55,12 @@ export function createWordPairDeck(input: WordPair[]): WordPairDeck {
       const candidates = remaining.length > 1
         ? remaining.filter((pair) => pair !== lastPair)
         : remaining;
-      const categories = [...new Set(candidates.map(categoryOf))];
+      const spicyRemaining = candidates.filter((pair) => categoryOf(pair) === 'spicy');
+      const pool = spicyRemaining.length > 0 ? spicyRemaining : candidates;
+      const categories = [...new Set(pool.map(categoryOf))];
       const otherCategories = categories.filter((category) => category !== lastCategory);
       const category = choose(otherCategories.length > 0 ? otherCategories : categories, rng);
-      const pair = choose(candidates.filter((item) => categoryOf(item) === category), rng);
+      const pair = choose(pool.filter((item) => categoryOf(item) === category), rng);
       remaining = remaining.filter((item) => item !== pair);
       lastPair = pair;
       lastCategory = category;

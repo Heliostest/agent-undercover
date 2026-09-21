@@ -1,66 +1,362 @@
 [
-  { "civilian": "牛奶", "undercover": "豆浆", "category": "classic" },
-  { "civilian": "咖啡", "undercover": "奶茶", "category": "classic" },
-  { "civilian": "老虎", "undercover": "狮子", "category": "classic" },
-  { "civilian": "医生", "undercover": "护士", "category": "classic" },
-  { "civilian": "飞机", "undercover": "高铁", "category": "classic" },
-  { "civilian": "西瓜", "undercover": "哈密瓜", "category": "classic" },
-  { "civilian": "电影院", "undercover": "剧场", "category": "classic" },
-  { "civilian": "吉他", "undercover": "尤克里里", "category": "classic" },
-  { "civilian": "羽毛球", "undercover": "网球", "category": "classic" },
-  { "civilian": "火锅", "undercover": "麻辣烫", "category": "classic" },
-  { "civilian": "台风", "undercover": "龙卷风", "category": "classic" },
-  { "civilian": "钢笔", "undercover": "铅笔", "category": "classic" },
-
-  { "civilian": "加班", "undercover": "值班", "category": "workplace" },
-  { "civilian": "团建", "undercover": "聚餐", "category": "workplace" },
-  { "civilian": "开会", "undercover": "培训", "category": "workplace" },
-  { "civilian": "汇报", "undercover": "检讨", "category": "workplace" },
-  { "civilian": "升职", "undercover": "跳槽", "category": "workplace" },
-  { "civilian": "请假", "undercover": "调休", "category": "workplace" },
-  { "civilian": "绩效", "undercover": "奖金", "category": "workplace" },
-  { "civilian": "摸鱼", "undercover": "装忙", "category": "workplace" },
-  { "civilian": "催稿", "undercover": "催款", "category": "workplace" },
-  { "civilian": "实习", "undercover": "试用", "category": "workplace" },
-  { "civilian": "画饼", "undercover": "承诺", "category": "workplace" },
-  { "civilian": "背锅", "undercover": "救场", "category": "workplace" },
-
-  { "civilian": "关心", "undercover": "查岗", "category": "social" },
-  { "civilian": "夸奖", "undercover": "客套", "category": "social" },
-  { "civilian": "解释", "undercover": "狡辩", "category": "social" },
-  { "civilian": "安慰", "undercover": "敷衍", "category": "social" },
-  { "civilian": "暗恋", "undercover": "暧昧", "category": "social" },
-  { "civilian": "吃醋", "undercover": "生气", "category": "social" },
-  { "civilian": "道歉", "undercover": "认输", "category": "social" },
-  { "civilian": "冷战", "undercover": "冷静", "category": "social" },
-  { "civilian": "礼貌", "undercover": "疏远", "category": "social" },
-  { "civilian": "惊喜", "undercover": "惊吓", "category": "social" },
-  { "civilian": "圆场", "undercover": "和稀泥", "category": "social" },
-  { "civilian": "合群", "undercover": "讨好", "category": "social" },
-
-  { "civilian": "减肥", "undercover": "养生", "category": "daily" },
-  { "civilian": "熬夜", "undercover": "失眠", "category": "daily" },
-  { "civilian": "赖床", "undercover": "午睡", "category": "daily" },
-  { "civilian": "省钱", "undercover": "抠门", "category": "daily" },
-  { "civilian": "囤货", "undercover": "收藏", "category": "daily" },
-  { "civilian": "冲动消费", "undercover": "报复性消费", "category": "daily" },
-  { "civilian": "外卖", "undercover": "泡面", "category": "daily" },
-  { "civilian": "拼单", "undercover": "砍价", "category": "daily" },
-  { "civilian": "排队", "undercover": "堵车", "category": "daily" },
-  { "civilian": "搬家", "undercover": "大扫除", "category": "daily" },
-  { "civilian": "早起", "undercover": "通宵", "category": "daily" },
-  { "civilian": "旅行", "undercover": "出差", "category": "daily" },
-
-  { "civilian": "相亲", "undercover": "面试", "category": "mixup" },
-  { "civilian": "婚礼", "undercover": "年会", "category": "mixup" },
-  { "civilian": "前任", "undercover": "甲方", "category": "mixup" },
-  { "civilian": "老板", "undercover": "班主任", "category": "mixup" },
-  { "civilian": "催婚", "undercover": "催作业", "category": "mixup" },
-  { "civilian": "退货", "undercover": "分手", "category": "mixup" },
-  { "civilian": "健身房", "undercover": "自习室", "category": "mixup" },
-  { "civilian": "家庭群", "undercover": "工作群", "category": "mixup" },
-  { "civilian": "发红包", "undercover": "交罚款", "category": "mixup" },
-  { "civilian": "订婚", "undercover": "签合同", "category": "mixup" },
-  { "civilian": "朋友聚会", "undercover": "同学会", "category": "mixup" },
-  { "civilian": "旅行团", "undercover": "考察团", "category": "mixup" }
+  {
+    "civilian": "牛奶",
+    "undercover": "豆浆",
+    "category": "classic"
+  },
+  {
+    "civilian": "咖啡",
+    "undercover": "奶茶",
+    "category": "classic"
+  },
+  {
+    "civilian": "老虎",
+    "undercover": "狮子",
+    "category": "classic"
+  },
+  {
+    "civilian": "医生",
+    "undercover": "护士",
+    "category": "classic"
+  },
+  {
+    "civilian": "飞机",
+    "undercover": "高铁",
+    "category": "classic"
+  },
+  {
+    "civilian": "西瓜",
+    "undercover": "哈密瓜",
+    "category": "classic"
+  },
+  {
+    "civilian": "电影院",
+    "undercover": "剧场",
+    "category": "classic"
+  },
+  {
+    "civilian": "吉他",
+    "undercover": "尤克里里",
+    "category": "classic"
+  },
+  {
+    "civilian": "羽毛球",
+    "undercover": "网球",
+    "category": "classic"
+  },
+  {
+    "civilian": "火锅",
+    "undercover": "麻辣烫",
+    "category": "classic"
+  },
+  {
+    "civilian": "台风",
+    "undercover": "龙卷风",
+    "category": "classic"
+  },
+  {
+    "civilian": "钢笔",
+    "undercover": "铅笔",
+    "category": "classic"
+  },
+  {
+    "civilian": "加班",
+    "undercover": "值班",
+    "category": "workplace"
+  },
+  {
+    "civilian": "团建",
+    "undercover": "聚餐",
+    "category": "workplace"
+  },
+  {
+    "civilian": "开会",
+    "undercover": "培训",
+    "category": "workplace"
+  },
+  {
+    "civilian": "汇报",
+    "undercover": "检讨",
+    "category": "workplace"
+  },
+  {
+    "civilian": "升职",
+    "undercover": "跳槽",
+    "category": "workplace"
+  },
+  {
+    "civilian": "请假",
+    "undercover": "调休",
+    "category": "workplace"
+  },
+  {
+    "civilian": "绩效",
+    "undercover": "奖金",
+    "category": "workplace"
+  },
+  {
+    "civilian": "摸鱼",
+    "undercover": "装忙",
+    "category": "workplace"
+  },
+  {
+    "civilian": "催稿",
+    "undercover": "催款",
+    "category": "workplace"
+  },
+  {
+    "civilian": "实习",
+    "undercover": "试用",
+    "category": "workplace"
+  },
+  {
+    "civilian": "画饼",
+    "undercover": "承诺",
+    "category": "workplace"
+  },
+  {
+    "civilian": "背锅",
+    "undercover": "救场",
+    "category": "workplace"
+  },
+  {
+    "civilian": "关心",
+    "undercover": "查岗",
+    "category": "social"
+  },
+  {
+    "civilian": "夸奖",
+    "undercover": "客套",
+    "category": "social"
+  },
+  {
+    "civilian": "解释",
+    "undercover": "狡辩",
+    "category": "social"
+  },
+  {
+    "civilian": "安慰",
+    "undercover": "敷衍",
+    "category": "social"
+  },
+  {
+    "civilian": "暗恋",
+    "undercover": "暧昧",
+    "category": "social"
+  },
+  {
+    "civilian": "吃醋",
+    "undercover": "生气",
+    "category": "social"
+  },
+  {
+    "civilian": "道歉",
+    "undercover": "认输",
+    "category": "social"
+  },
+  {
+    "civilian": "冷战",
+    "undercover": "冷静",
+    "category": "social"
+  },
+  {
+    "civilian": "礼貌",
+    "undercover": "疏远",
+    "category": "social"
+  },
+  {
+    "civilian": "惊喜",
+    "undercover": "惊吓",
+    "category": "social"
+  },
+  {
+    "civilian": "圆场",
+    "undercover": "和稀泥",
+    "category": "social"
+  },
+  {
+    "civilian": "合群",
+    "undercover": "讨好",
+    "category": "social"
+  },
+  {
+    "civilian": "减肥",
+    "undercover": "养生",
+    "category": "daily"
+  },
+  {
+    "civilian": "熬夜",
+    "undercover": "失眠",
+    "category": "daily"
+  },
+  {
+    "civilian": "赖床",
+    "undercover": "午睡",
+    "category": "daily"
+  },
+  {
+    "civilian": "省钱",
+    "undercover": "抠门",
+    "category": "daily"
+  },
+  {
+    "civilian": "囤货",
+    "undercover": "收藏",
+    "category": "daily"
+  },
+  {
+    "civilian": "冲动消费",
+    "undercover": "报复性消费",
+    "category": "daily"
+  },
+  {
+    "civilian": "外卖",
+    "undercover": "泡面",
+    "category": "daily"
+  },
+  {
+    "civilian": "拼单",
+    "undercover": "砍价",
+    "category": "daily"
+  },
+  {
+    "civilian": "排队",
+    "undercover": "堵车",
+    "category": "daily"
+  },
+  {
+    "civilian": "搬家",
+    "undercover": "大扫除",
+    "category": "daily"
+  },
+  {
+    "civilian": "早起",
+    "undercover": "通宵",
+    "category": "daily"
+  },
+  {
+    "civilian": "旅行",
+    "undercover": "出差",
+    "category": "daily"
+  },
+  {
+    "civilian": "相亲",
+    "undercover": "面试",
+    "category": "mixup"
+  },
+  {
+    "civilian": "婚礼",
+    "undercover": "年会",
+    "category": "mixup"
+  },
+  {
+    "civilian": "前任",
+    "undercover": "甲方",
+    "category": "mixup"
+  },
+  {
+    "civilian": "老板",
+    "undercover": "班主任",
+    "category": "mixup"
+  },
+  {
+    "civilian": "催婚",
+    "undercover": "催作业",
+    "category": "mixup"
+  },
+  {
+    "civilian": "退货",
+    "undercover": "分手",
+    "category": "mixup"
+  },
+  {
+    "civilian": "健身房",
+    "undercover": "自习室",
+    "category": "mixup"
+  },
+  {
+    "civilian": "家庭群",
+    "undercover": "工作群",
+    "category": "mixup"
+  },
+  {
+    "civilian": "发红包",
+    "undercover": "交罚款",
+    "category": "mixup"
+  },
+  {
+    "civilian": "订婚",
+    "undercover": "签合同",
+    "category": "mixup"
+  },
+  {
+    "civilian": "朋友聚会",
+    "undercover": "同学会",
+    "category": "mixup"
+  },
+  {
+    "civilian": "旅行团",
+    "undercover": "考察团",
+    "category": "mixup"
+  },
+  {
+    "civilian": "小三",
+    "undercover": "前任",
+    "category": "spicy"
+  },
+  {
+    "civilian": "彩礼",
+    "undercover": "嫁妆",
+    "category": "spicy"
+  },
+  {
+    "civilian": "情书",
+    "undercover": "遗书",
+    "category": "spicy"
+  },
+  {
+    "civilian": "录音",
+    "undercover": "录像",
+    "category": "spicy"
+  },
+  {
+    "civilian": "发票",
+    "undercover": "欠条",
+    "category": "spicy"
+  },
+  {
+    "civilian": "情敌",
+    "undercover": "闺蜜",
+    "category": "spicy"
+  },
+  {
+    "civilian": "婆婆",
+    "undercover": "岳母",
+    "category": "spicy"
+  },
+  {
+    "civilian": "酒局",
+    "undercover": "牌局",
+    "category": "spicy"
+  },
+  {
+    "civilian": "钻戒",
+    "undercover": "项链",
+    "category": "spicy"
+  },
+  {
+    "civilian": "婚纱",
+    "undercover": "西装",
+    "category": "spicy"
+  },
+  {
+    "civilian": "私房",
+    "undercover": "公款",
+    "category": "spicy"
+  },
+  {
+    "civilian": "原配",
+    "undercover": "外室",
+    "category": "spicy"
+  }
 ]
