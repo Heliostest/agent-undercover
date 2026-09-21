@@ -171,6 +171,45 @@ describe('buildSpeechMessages', () => {
     expect(content).not.toContain('和你的词像是同一边');
   });
 
+  it('有前人发言时要求判断自己是否可能是少数，并禁止挤同一个场景', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    expect(content).toMatch(/少数/);
+    expect(content).toMatch(/同一.*场景|挤/);
+    // 自觉少数时的伪装策略：贴多数人的说法框架，避开只属于自己词的独特点。
+    expect(content).toContain('借用');
+    expect(content).toContain('独特点');
+  });
+
+  it('自己是第一个开口的人时不谈伪装，没人可贴', () => {
+    const content = buildSpeechMessages(PERSONAS[2], { ...VIEW, round: 1, log: [] })[1].content;
+    expect(content).not.toContain('借用');
+    expect(content).not.toContain('独特点');
+  });
+
+  it('有 speechAngle 时注入 label 与 hint', () => {
+    const content = buildSpeechMessages(PERSONAS[2], {
+      ...VIEW,
+      speechAngle: { id: 'habit', label: '个人小习惯', hint: '一个很小的个人习惯' },
+    })[1].content;
+    expect(content).toContain('本轮你的发言角度是「个人小习惯」');
+    expect(content).toContain('一个很小的个人习惯');
+  });
+
+  it('无 speechAngle 时不出现角度硬约束套话', () => {
+    expect(buildSpeechMessages(PERSONAS[2], VIEW)[1].content).not.toMatch(/本轮你的发言角度/);
+  });
+
+  it('thought 里先判断同边与对不上，再判断自己是否少数，最后才规划发言', () => {
+    const content = buildSpeechMessages(PERSONAS[2], VIEW)[1].content;
+    const opposite = content.indexOf('明显和你对不上');
+    // speechStrategy 里也提过多数/少数，这里认 thoughtPlan 独有的那句。
+    const minority = content.indexOf('判断自己这轮可能是多数还是少数');
+    const plan = content.indexOf('最后才说你这轮打算藏什么');
+
+    expect(minority).toBeGreaterThan(opposite);
+    expect(plan).toBeGreaterThan(minority);
+  });
+
   it('两种情形下 thought 都允许写出自己的词，speech 仍禁止泄词', () => {
     const views: AgentView[] = [VIEW, { ...VIEW, round: 1, log: [] }];
     for (const view of views) {
@@ -187,6 +226,12 @@ describe('buildVoteMessages', () => {
     expect(messages[1].content).toContain('可投的座位号：0（阿岚）、3（沉舟）');
     expect(messages[1].content).toContain('{"thought":"你的内心推理","vote":0,"reason":"一句话理由"}');
     expect(messages[1].content).not.toContain('2（雷子）');
+  });
+
+  it('提醒不要只因为对方没复述自己熟悉的场景就投票', () => {
+    const content = buildVoteMessages(PERSONAS[2], VIEW, [0, 3])[1].content;
+    expect(content).toMatch(/场景/);
+    expect(content).toContain('相容');
   });
 
   it('投票也说明 thought 私密、reason 公开', () => {
