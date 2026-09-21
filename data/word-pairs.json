@@ -62,5 +62,18 @@
   { "civilian": "发红包", "undercover": "交罚款", "category": "mixup" },
   { "civilian": "订婚", "undercover": "签合同", "category": "mixup" },
   { "civilian": "朋友聚会", "undercover": "同学会", "category": "mixup" },
-  { "civilian": "旅行团", "undercover": "考察团", "category": "mixup" }
+  { "civilian": "旅行团", "undercover": "考察团", "category": "mixup" },
+
+  { "civilian": "塌房", "undercover": "翻车", "category": "spicy" },
+  { "civilian": "对线", "undercover": "撕逼", "category": "spicy" },
+  { "civilian": "吃瓜", "undercover": "下场", "category": "spicy" },
+  { "civilian": "洗白", "undercover": "甩锅", "category": "spicy" },
+  { "civilian": "控评", "undercover": "删评", "category": "spicy" },
+  { "civilian": "站姐", "undercover": "黑粉", "category": "spicy" },
+  { "civilian": "造谣", "undercover": "爆料", "category": "spicy" },
+  { "civilian": "绝交", "undercover": "拉黑", "category": "spicy" },
+  { "civilian": "阴阳怪气", "undercover": "直球", "category": "spicy" },
+  { "civilian": "躺平", "undercover": "摆烂", "category": "spicy" },
+  { "civilian": "内卷", "undercover": "卷王", "category": "spicy" },
+  { "civilian": "实锤", "undercover": "锤", "category": "spicy" }
 ]
